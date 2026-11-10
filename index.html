@@ -9,125 +9,128 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* --accent animates smoothly because it is a registered colour property */
   @property --accent { syntax:'<color>'; inherits:true; initial-value:#FF5A1F; }
   @property --on     { syntax:'<color>'; inherits:true; initial-value:#FFFFFF; }
   @property --a2     { syntax:'<color>'; inherits:true; initial-value:#3D5BFF; }
   @property --a3     { syntax:'<color>'; inherits:true; initial-value:#FF3D8B; }
 
   :root{
-    --bg:#0F0E13; --surface:#1A1922; --surface2:#24222E; --text:#F6F2EA; --muted:#A39FB0; --line:rgba(255,255,255,.09);
+    --bg:#0F0E13; --surface:#1A1922; --surface2:#24222E; --text:#F6F2EA; --muted:#B7B2C2; --line:rgba(255,255,255,.12);
     --brand:#FF5A1F; --cobalt:#3D5BFF; --pink:#FF3D8B; --sun:#FFC531;
-    --accent:#FF5A1F; --on:#FFFFFF;
-    --radius:32px; --ease:cubic-bezier(.2,.8,.2,1);
+    --accent:#FF5A1F; --on:#FFFFFF; --a2:#3D5BFF; --a3:#FF3D8B;
+    --glass:rgba(255,255,255,.08); --glass-line:rgba(255,255,255,.16);
+    --ease:cubic-bezier(.2,.8,.2,1);
     transition:--accent .6s var(--ease), --on .6s var(--ease), --a2 .9s var(--ease), --a3 .9s var(--ease);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
-  h1,h2,h3{font-family:"Bricolage Grotesque",Inter,sans-serif;letter-spacing:-.02em}
+  h1,h2,h3,h4{font-family:"Bricolage Grotesque",Inter,sans-serif;letter-spacing:-.02em}
   a{color:inherit}
   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   img{display:block;max-width:100%}
 
-  .app{position:relative;z-index:1;display:grid;grid-template-columns:1.15fr 1fr;gap:20px;height:100vh;padding:20px}
+  /* ---------- BACKGROUND: glow when idle, the selected photo full-bleed when a section is open ---------- */
+  .aura{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .aura i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;animation:drift 18s ease-in-out infinite alternate}
+  .aura .b1{width:46vw;aspect-ratio:1;right:-8vw;top:18vh;background:var(--accent)}
+  .aura .b2{width:38vw;aspect-ratio:1;left:30vw;top:-16vh;background:var(--a2);animation-delay:-6s}
+  .aura .b3{width:36vw;aspect-ratio:1;left:-8vw;bottom:-14vh;background:var(--a3);animation-delay:-12s}
+  @keyframes drift{to{transform:translate(-8%,8%) scale(1.15)}}
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .bg img{position:absolute;inset:-2%;width:104%;height:104%;max-width:none;object-fit:cover;opacity:0;transform:scale(1.06);transition:opacity .9s var(--ease),transform 9s ease-out}
+  .bg img.on{opacity:1;transform:scale(1)}
+  .bg img.shot{filter:blur(10px) brightness(.8);transition:opacity .9s var(--ease),transform 9s ease-out,filter .5s}
+  body.peek .bg img.shot{filter:none;object-fit:contain}
+  .bg-tint{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--accent);mix-blend-mode:multiply;opacity:0;transition:opacity .6s}
+  .bg-shade{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .6s;
+            background:linear-gradient(90deg,rgba(10,9,14,.8) 0%,rgba(10,9,14,.3) 42%,rgba(10,9,14,.55) 100%),linear-gradient(0deg,rgba(10,9,14,.65),transparent 45%)}
+  body.has-photo .bg-tint{opacity:.32}
+  body.has-photo .bg-shade{opacity:1}
+  body.peek .bg-shade{opacity:.2}
+  body.peek .bg-tint{opacity:0}
 
-  /* FULL GLASS: soft colour glow behind the menu, taken from the current section's photos */
-  .aura{position:fixed;top:0;right:0;bottom:0;width:60%;z-index:0;overflow:hidden;pointer-events:none;
-        -webkit-mask-image:linear-gradient(to right,transparent,#000 30%);mask-image:linear-gradient(to right,transparent,#000 30%)}
-  .aura i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:drift 16s ease-in-out infinite alternate}
-  .aura .b1{width:60%;aspect-ratio:1;right:-10%;top:30%;background:var(--accent)}
-  .aura .b2{width:50%;aspect-ratio:1;left:5%;top:-8%;background:var(--a2);animation-delay:-5s}
-  .aura .b3{width:46%;aspect-ratio:1;left:20%;bottom:-12%;background:var(--a3);animation-delay:-10s}
-  @keyframes drift{to{transform:translate(-10%,8%) scale(1.15)}}
+  /* ---------- LAYOUT ---------- */
+  .app{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:44px;height:100vh;padding:32px 40px}
+  .identity{display:flex;flex-direction:column;justify-content:flex-end;min-height:0;transition:opacity .45s var(--ease)}
 
-  /* ---------- STAGE ---------- */
-  .stage{position:relative;border-radius:var(--radius);background:var(--brand);overflow:hidden;perspective:1200px}
-  .stage.clickable{cursor:pointer}
-  .stage-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .25s ease-out}
-  .view{position:absolute;inset:0;opacity:0;transform:scale(.985);transition:opacity .45s var(--ease),transform .45s var(--ease);pointer-events:none}
-  .view.active{opacity:1;transform:none;pointer-events:auto}
-
-  /* home */
-  .layer{position:absolute;inset:0;transition:transform .2s ease-out;will-change:transform}
-  .ring{position:absolute;left:50%;top:52%;width:min(74%,560px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;
-        background:conic-gradient(from 0deg,var(--cobalt),var(--pink),var(--sun),var(--cobalt));animation:spin 24s linear infinite}
-  .ring::after{content:"";position:absolute;inset:13%;border-radius:50%;background:var(--brand)}
+  /* the badge: you, popping out of a colour ring */
+  .badge{--size:min(26vw,36vh);position:relative;width:var(--size);aspect-ratio:1;margin:calc(var(--size) * .3) 0 24px 10px;flex:none;transition:opacity .6s var(--ease),transform .6s var(--ease)}
+  .disc{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,var(--cobalt),var(--pink),var(--sun),var(--cobalt));animation:spin 24s linear infinite}
+  .disc::after{content:"";position:absolute;inset:7%;border-radius:50%;background:var(--brand)}
   @keyframes spin{to{rotate:360deg}}
-  .person{position:absolute;left:50%;bottom:0;height:min(84%,640px);max-width:82%;object-fit:contain;object-position:bottom;translate:-50% 0;
-          -webkit-mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%)}
-  .chip{position:absolute;padding:9px 15px;border-radius:999px;background:var(--bg);color:var(--text);font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);white-space:nowrap}
-  .chip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:1px}
+  .bust{position:absolute;left:0;right:0;bottom:0;height:128%;overflow:hidden;border-radius:0 0 50% 50% / 0 0 39% 39%}
+  .bust img{position:absolute;bottom:0;left:50%;translate:-50% 0;height:100%;width:auto;max-width:none}
+  .chip{position:absolute;padding:7px 13px;border-radius:999px;background:rgba(15,14,19,.85);font-weight:600;font-size:13px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .chip i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:1px}
+  body.selected .badge{opacity:0;transform:translateY(26px) scale(.94);pointer-events:none}
 
-  /* preview */
-  .pv-bg{position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 20%,var(--accent),#0F0E13 75%)}
-  .pv-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.06);transition:opacity .7s var(--ease),transform 6s ease-out}
-  .pv-bg img.on{opacity:1;transform:scale(1)}
-  .pv-tint{position:absolute;inset:0;background:var(--accent);mix-blend-mode:multiply;opacity:.38}
-  .pv-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,14,19,.78) 0%,rgba(15,14,19,.25) 38%,rgba(15,14,19,.3) 60%,rgba(15,14,19,.9) 100%)}
-  .pv-head{position:absolute;left:36px;top:32px;right:36px;z-index:3}
-  .kicker{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-  .pv-head .kicker{color:#fff;opacity:.85}
-  .pv-head h2{font-size:clamp(30px,3.4vw,48px);line-height:1.05;margin-top:8px;max-width:15ch;color:#fff}
-  .pv-cta{position:absolute;right:28px;bottom:24px;z-index:4;font-weight:600;font-size:14px;padding:10px 16px;border-radius:999px;background:var(--accent);color:var(--on)}
-
-  /* GLASS sheet: frosted panel that sits half-open over the photo */
-  .sheet{position:absolute;left:16px;right:16px;bottom:16px;height:58%;z-index:3;border-radius:28px;padding:12px 16px 70px;display:flex;flex-direction:column;
-         background:rgba(255,255,255,.13);-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
-         border:1px solid rgba(255,255,255,.28);box-shadow:0 24px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
-         animation:sheetUp .7s var(--ease) backwards;transition:transform .5s var(--ease)}
-  .sheet.dragging{transition:none}
-  .sheet.collapsed{transform:translateY(calc(100% - 58px))}
-  .sheet{-webkit-user-select:none;user-select:none;touch-action:none}
-  @keyframes sheetUp{from{transform:translateY(108%)}to{transform:none}}
-  /* the grab zone: drag (or click) to slide the sheet down and see the whole photo */
-  .grab-zone{flex:none;height:46px;margin:-12px -16px 0;display:flex;align-items:center;justify-content:center;gap:10px;cursor:grab;touch-action:none;color:#fff;font-size:12px;font-weight:600}
-  .grab-zone:active{cursor:grabbing}
-  .grabber{width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.5);transition:width .3s var(--ease),background .3s}
-  .grab-zone:hover .grabber{width:60px;background:rgba(255,255,255,.85)}
-  .peek{display:none;opacity:.85}
-  .sheet.collapsed .peek{display:inline}
-  .sheet .g-tiles,.sheet .pv-cta{transition:opacity .3s}
-  .sheet.collapsed .g-tiles,.sheet.collapsed .pv-cta{opacity:0;pointer-events:none}
-  .g-tiles{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:minmax(64px,1fr);gap:10px;overflow:auto;scrollbar-width:none}
-  .g-tile{text-align:left;color:#fff;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
-          display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;
-          transition:background .35s,border-color .35s,transform .35s var(--ease);animation:tileIn .5s var(--ease) both}
-  .g-tile b{font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(15px,1.4vw,18px);line-height:1.15}
-  .g-tile span{font-size:12.5px;line-height:1.35;opacity:.82;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .g-tile.sel{background:color-mix(in srgb,var(--accent) 62%,transparent);border-color:var(--accent);transform:translateY(-2px)}
-  @keyframes tileIn{from{opacity:0;transform:translateY(14px)}}
-  .sheet .pv-cta{right:16px;bottom:14px}
-
-  /* ---------- PANEL ---------- */
-  .panel{display:flex;flex-direction:column;gap:22px;padding:14px 6px 4px;overflow:auto;min-height:0}
   .hello{font-size:15px;color:var(--muted);font-weight:500}
-  .panel h1{font-size:clamp(40px,4.6vw,72px);line-height:.95;margin-top:6px}
-  .panel h1 span{color:var(--accent)}
-  .tagline{margin-top:12px;font-size:16px;color:var(--muted);line-height:1.5;max-width:44ch}
-  /* LinkedIn-style "open to work" badge */
-  .status{display:inline-flex;align-items:center;gap:9px;margin-top:16px;padding:8px 16px 8px 12px;border-radius:999px;background:#2E7D32;color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em;box-shadow:0 6px 20px rgba(46,125,50,.35)}
-  .status i{width:8px;height:8px;border-radius:50%;background:#B9F6CA;box-shadow:0 0 0 0 rgba(185,246,202,.7);animation:pulse 2s infinite}
-  @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(185,246,202,0)}100%{box-shadow:0 0 0 0 rgba(185,246,202,0)}}
+  .identity h1{font-size:clamp(44px,5.2vw,86px);line-height:.93;margin-top:6px}
+  .identity h1 span{color:var(--accent)}
+  .tagline{margin-top:14px;font-size:16px;color:#DCD7CE;line-height:1.5;max-width:42ch}
+  .status{display:inline-flex;align-items:center;gap:9px;margin-top:16px;padding:8px 16px 8px 12px;border-radius:999px;background:#2E7D32;color:#fff;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(46,125,50,.35);align-self:flex-start}
+  .status i{width:8px;height:8px;border-radius:50%;background:#B9F6CA;animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(185,246,202,.7)}70%,100%{box-shadow:0 0 0 8px rgba(185,246,202,0)}}
 
-  .menu{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;flex:1;min-height:340px}
-  .tile{position:relative;text-align:left;padding:16px 18px 14px;border-radius:22px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
-        -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
-        display:flex;flex-direction:column;justify-content:space-between;gap:12px;overflow:hidden;transition:transform .35s var(--ease),box-shadow .35s}
-  .tile::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--accent) 82%,transparent);transform:translateY(101%);transition:transform .45s var(--ease)}
-  .tile > *{position:relative}
-  .tile .num{font-size:12px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
-  .tile .num em{width:12px;height:12px;border-radius:50%;background:var(--c)}
-  .tile .lbl{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(20px,1.9vw,28px);line-height:1}
-  .tile .sub{display:block;font-size:13px;color:var(--muted);margin-top:6px}
-  .tile .arrow{position:absolute;right:16px;bottom:12px;font-size:20px;opacity:0;transform:translate(-6px,6px);transition:.35s var(--ease)}
-  .tile.wide{grid-column:span 2}
-  .tile.on{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.35);color:var(--on)}
-  .tile.on::before{transform:none}
-  .tile.on .num,.tile.on .sub{color:var(--on);opacity:.8}
-  .tile.on .num em{background:var(--on)}
-  .tile.on .arrow{opacity:1;transform:none}
-  .tile:focus-visible{outline:3px solid var(--text);outline-offset:3px}
+  /* photo controls: caption + "view photo" (only when a photo is showing) */
+  .photo-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .4s,transform .4s var(--ease)}
+  body.has-photo .photo-ctl{opacity:1;transform:none;pointer-events:auto}
+  .glass-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;font-size:13px;font-weight:600;
+              background:var(--glass);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%)}
+  .glass-pill i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .peek-btn:hover{background:rgba(255,255,255,.16)}
+  body.peek .identity > :not(.photo-ctl), body.peek .cc{opacity:0;pointer-events:none}
+  body.peek .identity > :not(.photo-ctl){transform:translateY(-6px)}
+  .identity > *{transition:opacity .45s var(--ease),transform .45s var(--ease)}
+
+  /* ---------- CONTROL CENTER grid ---------- */
+  .cc{align-self:center;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(100px,auto);grid-auto-flow:row dense;gap:12px;
+      max-height:calc(100vh - 64px);overflow:auto;padding:4px;scrollbar-width:none;transition:opacity .45s var(--ease)}
+  .cc::-webkit-scrollbar{display:none}
+  .mod{position:relative;display:flex;flex-direction:column;border-radius:26px;background:var(--glass);border:1px solid var(--glass-line);overflow:hidden;
+       -webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 32px rgba(0,0,0,.18);
+       transition:background .4s,border-color .4s,opacity .4s}
+  .mod:hover{background:rgba(255,255,255,.13)}
+  .m-about{grid-column:span 2;grid-row:span 2}
+  .m-projects,.m-journey,.m-contact{grid-column:span 2}
+  .m-play{grid-column:span 4}
+  .m-skills,.m-cv{grid-column:span 1}
+  .mod-head{position:relative;width:100%;flex:1 0 auto;min-height:100px;text-align:left;padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+  .mod-head .num{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .mod-head .num em{width:11px;height:11px;border-radius:50%;background:var(--c)}
+  .mod-head .lbl{display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(20px,1.8vw,30px);line-height:1}
+  .m-about .mod-head .lbl{font-size:clamp(28px,2.6vw,42px)}
+  .mod-head .sub{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+  .mod-head .plus{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:18px;
+                  background:rgba(255,255,255,.1);transition:transform .45s var(--ease),background .3s}
+  .mod:hover .plus{background:rgba(255,255,255,.2)}
+  .mod-head:focus-visible{outline:3px solid var(--text);outline-offset:-3px;border-radius:26px}
+
+  .mod.open{grid-column:1 / -1;grid-row:auto;background:color-mix(in srgb,var(--accent) 20%,rgba(255,255,255,.07));border-color:color-mix(in srgb,var(--accent) 65%,transparent)}
+  .mod.open .mod-head{flex:none;min-height:0;padding-bottom:6px;gap:8px}
+  .mod.open .plus{transform:rotate(45deg);background:var(--accent);color:var(--on)}
+  .cc.has-open .mod:not(.open){opacity:.72}
+  .cc.has-open .mod:not(.open):hover{opacity:1}
+  .mod-body{display:none;padding:0 18px 18px}
+  .mod.open .mod-body{display:block;animation:bodyIn .5s var(--ease) .08s both}
+  @keyframes bodyIn{from{opacity:0;transform:translateY(10px)}}
+  .mod-body h3{font-size:clamp(22px,2vw,30px);line-height:1.1;margin:2px 0 12px;max-width:24ch}
+  .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+  .item{text-align:left;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+        transition:background .3s,color .3s,border-color .3s,transform .3s var(--ease)}
+  .item:hover{transform:translateY(-2px)}
+  .item b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:16px;line-height:1.15}
+  .item span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12.5px;line-height:1.4;opacity:.82;margin-top:3px}
+  .item.on{background:var(--accent);color:var(--on);border-color:transparent}
+  .mod-foot{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px}
+  .open-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;background:var(--accent);color:var(--on);font-weight:600;font-size:14px}
+  .mod-foot small{font-size:12px;color:var(--muted)}
+
+  /* shared bits used by the full pages */
+  .pv-tint{position:absolute;inset:0;background:var(--accent);mix-blend-mode:multiply;opacity:.38}
+  .kicker{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 
   /* ---------- EXPANDED PAGE ---------- */
   .expand{position:fixed;inset:0;z-index:50;background:var(--bg);visibility:hidden;clip-path:inset(0 round 0);overflow:auto}
@@ -202,15 +205,18 @@
   .lb.open img{transform:none}
   .lb figcaption{font-weight:600;color:#fff}
 
-  /* ---------- small screens ---------- */
-  @media (max-width:860px){
+
+  /* ---------- small screens: same idea, stacked ---------- */
+  @media (max-width:900px){
     body{overflow:auto}
-    .app{grid-template-columns:1fr;height:auto;padding:16px;gap:16px}
-    .aura{width:100%}
-    .stage{height:62vh;min-height:400px}
-    .menu{min-height:0}
-    .tile{min-height:112px}
-    .sheet{height:62%}
+    .app{grid-template-columns:1fr;height:auto;min-height:100vh;padding:20px 16px 28px;gap:24px}
+    .identity{min-height:auto}
+    .badge{--size:min(64vw,320px);margin:calc(var(--size) * .3) auto 22px}
+    .cc{max-height:none;overflow:visible;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .m-about,.m-play{grid-column:span 2;grid-row:auto}
+    .m-projects,.m-journey,.m-contact{grid-column:span 2}
+    .items{grid-template-columns:1fr}
+    .bg-shade{background:linear-gradient(0deg,rgba(10,9,14,.75),rgba(10,9,14,.35))}
     .proj{grid-template-columns:1fr}
     .ph.land{grid-column:auto}
     .gallery{grid-template-columns:repeat(2,1fr)}
@@ -221,33 +227,31 @@
 </head>
 <body>
 <div class="aura" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+<div class="bg" id="bg" aria-hidden="true"></div>
+<div class="bg-tint" aria-hidden="true"></div>
+<div class="bg-shade" aria-hidden="true"></div>
+
 <main class="app">
-  <section class="stage" id="stage" aria-live="polite">
-    <div class="stage-inner" id="stageInner">
-      <div class="view active" id="home">
-        <div class="layer" data-depth="12"><div class="ring"></div></div>
-        <!-- swap assets/me.webp for the wisuda photo later (transparent background) -->
-        <div class="layer" data-depth="26"><img class="person" src="assets/me.webp" alt="Portrait of Haiqal Dwikusuma"></div>
-        <div class="layer" data-depth="48">
-          <span class="chip" style="left:9%;top:20%"><i style="background:var(--sun)"></i>React · Next.js</span>
-          <span class="chip" style="right:7%;top:31%"><i style="background:var(--pink)"></i>AI APIs</span>
-          <span class="chip" style="left:5%;top:56%"><i style="background:var(--cobalt)"></i>UGM CS '26</span>
-          <span class="chip" style="right:6%;top:64%"><i style="background:#2BD974"></i>IISMA @ MSU</span>
-        </div>
-      </div>
-      <div class="view" id="preview"></div>
+  <section class="identity" aria-label="About Haiqal">
+    <div class="badge">
+      <div class="disc"></div>
+      <!-- swap assets/me.webp for the wisuda photo later (transparent background) -->
+      <div class="bust"><img src="assets/me.webp" alt="Portrait of Haiqal Dwikusuma"></div>
+      <span class="chip" style="left:-6%;top:22%"><i style="background:var(--sun)"></i>React · Next.js</span>
+      <span class="chip" style="right:-10%;top:40%"><i style="background:var(--pink)"></i>AI APIs</span>
+      <span class="chip" style="left:-10%;top:66%"><i style="background:#2BD974"></i>IISMA @ MSU</span>
+    </div>
+    <p class="hello">Hi, I'm</p>
+    <h1>Haiqal<br><span>Dwikusuma.</span></h1>
+    <p class="tagline">Computer Science graduate from Universitas Gadjah Mada. I build responsive web apps with React &amp; Next.js and like plugging AI into real products.</p>
+    <span class="status"><i></i>#OpenToWork</span>
+    <div class="photo-ctl">
+      <button class="glass-pill peek-btn" id="peekBtn" aria-pressed="false">👁 <span id="peekLbl">View photo</span></button>
+      <span class="glass-pill"><i></i><span id="bgCap"></span></span>
     </div>
   </section>
 
-  <aside class="panel">
-    <header>
-      <p class="hello">Hi, I'm</p>
-      <h1>Haiqal<br><span>Dwikusuma.</span></h1>
-      <p class="tagline">Computer Science graduate from Universitas Gadjah Mada. I build responsive web apps with React &amp; Next.js and like plugging AI into real products.</p>
-      <span class="status"><i></i>#OpenToWork</span>
-    </header>
-    <nav class="menu" id="menu" aria-label="Sections"></nav>
-  </aside>
+  <nav class="cc" id="cc" aria-label="Sections"></nav>
 </main>
 
 <div class="expand" id="expand" role="dialog" aria-modal="true" aria-label="Section"><div id="xHero"></div><div class="x-inner" id="xInner"></div></div>
@@ -350,188 +354,147 @@ const S = {
       {t:'GitHub',d:'github.com/mhaiqaldk'},
     ]},
 };
+
 const KEYS = Object.keys(S);
 const coverColor = k => { const it = S[k].items.find(i => i.img); return it ? col(it.img) : S[k].c; };
+const firstImg = k => (S[k].items.find(i => i.img) || {}).img || null;
 
 const $ = s => document.querySelector(s);
-const root = document.documentElement;
-const stage = $('#stage'), stageInner = $('#stageInner'), home = $('#home'), preview = $('#preview');
+const root = document.documentElement, body = document.body;
+const cc = $('#cc'), bg = $('#bg'), bgCap = $('#bgCap');
 const expand = $('#expand'), xInner = $('#xInner'), xHero = $('#xHero'), xClose = $('#xClose');
 const lb = $('#lb'), lbImg = $('#lbImg'), lbCap = $('#lbCap');
 const canHover = matchMedia('(hover: hover)').matches;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let current = null, isOpen = false, pageColor = null;
+let sel = null, itemIdx = -1, touched = false, cycle = 0, isOpen = false, pageColor = null, openFrom = null;
 
 /* ---------- colour ---------- */
 function setAccent(c){
   root.style.setProperty('--accent', c);
   const n = parseInt(c.slice(1),16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
-  const lum = (0.2126*r + 0.7152*g + 0.0722*b)/255;
-  root.style.setProperty('--on', lum > .6 ? '#0F0E13' : '#FFFFFF');
+  root.style.setProperty('--on', (0.2126*r + 0.7152*g + 0.0722*b)/255 > .6 ? '#0F0E13' : '#FFFFFF');
 }
-
-/* ---------- menu ---------- */
-$('#menu').innerHTML = KEYS.map(k => { const s=S[k]; return `
-  <button class="tile${s.wide?' wide':''}" data-key="${k}" style="--c:${coverColor(k)}">
-    <span class="num">${s.num}<em></em></span>
-    <span><span class="lbl">${s.label}</span><span class="sub">${s.sub}</span></span>
-    <span class="arrow">↗</span>
-  </button>`; }).join('');
-const tiles = [...document.querySelectorAll('.tile')];
-let intentTimer;
-tiles.forEach(t => {
-  const k = t.dataset.key;
-  /* hover intent: once a preview is showing, a box only takes over if the pointer actually
-     rests on it, so brushing past other boxes on the way to the stage doesn't switch sections */
-  t.addEventListener('mouseenter', () => {
-    if (!canHover) return;
-    clearTimeout(intentTimer);
-    if (!current || isOpen) show(k);
-    else intentTimer = setTimeout(() => show(k), 260);
-  });
-  t.addEventListener('mouseleave', () => clearTimeout(intentTimer));
-  t.addEventListener('focus', () => show(k));
-  t.addEventListener('click', () => open(k));
-});
-/* Leaving the menu doesn't reset straight away: you can move onto the stage to use the glass tiles.
-   It only goes back to the photo once the pointer has left BOTH the menu and the stage for a moment. */
-let homeTimer;
-const scheduleHome = () => { clearTimeout(homeTimer); homeTimer = setTimeout(() => { if (canHover && !isOpen) show(null); }, 450); };
-const cancelHome = () => clearTimeout(homeTimer);
-$('#menu').addEventListener('mouseleave', scheduleHome);
-$('#menu').addEventListener('mouseenter', cancelHome);
-stage.addEventListener('mouseenter', () => { cancelHome(); clearTimeout(intentTimer); });
-stage.addEventListener('mouseleave', () => { if (current) scheduleHome(); });
-stage.addEventListener('click', () => { if (current && !isOpen) open(current); });
-
-/* ---------- stage preview ---------- */
-let swapTimer;
-/* the glow's other two colours come from the section's other photos */
 function setGlow(k){
   let cs = ['#3D5BFF','#FF3D8B'];
   if (k){
-    const s = S[k];
-    const own = [...new Set(s.items.filter(i=>i.img).map(i=>col(i.img)))].slice(1);
-    cs = [own[0] || s.c, own[1] || own[0] || s.c];
+    const own = [...new Set(S[k].items.filter(i=>i.img).map(i=>col(i.img)))].slice(1);
+    cs = [own[0] || S[k].c, own[1] || own[0] || S[k].c];
   }
   root.style.setProperty('--a2', cs[0]); root.style.setProperty('--a3', cs[1]);
 }
-function show(k){
-  if (k === current) return;
-  current = k;
-  tiles.forEach(t => t.classList.toggle('on', t.dataset.key === k));
-  setAccent(k ? coverColor(k) : '#FF5A1F');
-  setGlow(k);
-  stage.classList.toggle('clickable', !!k);
-  clearTimeout(swapTimer);
-  if (!k){ preview.classList.remove('active'); home.classList.add('active'); stopPreview(); return; }
-  home.classList.remove('active');
-  preview.classList.remove('active');
-  swapTimer = setTimeout(() => { render(k); preview.classList.add('active'); }, 140);
-}
-function render(k){
-  const s = S[k];
-  stopPreview();
-  preview.innerHTML = `
-    <div class="pv-bg" id="pvBg"></div><div class="pv-tint"></div><div class="pv-shade"></div>
-    <div class="pv-head"><span class="kicker">${s.num} — ${s.label}</span><h2>${s.title}</h2></div>
-    <div class="sheet" id="sheet"><div class="grab-zone" id="grab" title="Drag down to see the photo"><span class="grabber"></span><span class="peek">Pull up</span></div>
-      <div class="g-tiles" id="gTiles">${s.items.map((it,i)=>`<button class="g-tile" data-i="${i}" tabindex="-1" style="animation-delay:${.18+i*.05}s"><b>${it.t}</b><span>${it.d}</span></button>`).join('')}</div>
-      <span class="pv-cta">Click to open ↗</span>
-    </div>`;
-  startGlass(s);
-}
-function setStagePhoto(key){
-  const bg = $('#pvBg'); if (!bg) return;
-  [...bg.children].forEach(im => { im.classList.remove('on'); setTimeout(()=>im.remove(), 700); });
-  if (!key) return;
+
+/* ---------- full-page background photo ---------- */
+let bgKey = null;
+function setBg(key){
+  if (key === bgKey) return;
+  bgKey = key;
+  [...bg.children].forEach(im => { im.classList.remove('on'); setTimeout(() => im.remove(), 950); });
+  body.classList.toggle('has-photo', !!key);
+  if (!key){ exitPeek(); return; }
+  bgCap.textContent = cap(key);
   const im = new Image(); im.alt = ''; im.src = src(key);
-  if (P[key][0].startsWith('shots/')) im.style.filter = 'blur(5px)';  /* app screenshots: soften so their text doesn't fight the heading */
+  if (P[key][0].startsWith('shots/')) im.classList.add('shot');
   bg.appendChild(im);
-  (im.decode ? im.decode() : Promise.resolve()).catch(()=>{}).then(() => requestAnimationFrame(() => im.classList.add('on')));
+  (im.decode ? im.decode() : Promise.resolve()).catch(()=>{}).then(() => { if (bgKey === key) requestAnimationFrame(() => im.classList.add('on')); });
 }
 
-/* ---------- glass tiles: hover a tile to change the photo and colour ---------- */
-let G = null;
-function startGlass(s){
-  const tiles = [...document.querySelectorAll('#gTiles .g-tile')];
-  G = {s, tiles, sel:-1, touched:false, timer:0};
-  const select = i => {
-    if (!G || i === G.sel) return;
-    G.sel = i;
-    tiles.forEach((t,j)=>t.classList.toggle('sel', j===i));
-    const it = s.items[i];
-    setAccent(it.img ? col(it.img) : s.c);
-    setStagePhoto(it.img);
-  };
-  tiles.forEach((t,i)=>t.addEventListener('mouseenter', ()=>{ G.touched = true; select(i); }));
-  select(0);
-  /* Drag the sheet down to reveal the photo, up to bring the tiles back.
-     You can grab it anywhere except on a tile/button (big hit area); clicking the handle toggles it. */
-  const sheet = $('#sheet'), grab = $('#grab');
-  const PEEK = 58;
-  let drag = null, suppressClick = false;
-  const maxOff = () => sheet.offsetHeight - PEEK;
-  sheet.addEventListener('pointerdown', e => {
-    if (e.button !== 0) return;
-    suppressClick = false;
-    const onHandle = !!e.target.closest('#grab');
-    if (!onHandle && !sheet.classList.contains('collapsed') && e.target.closest('.g-tile, .pv-cta')) return;
-    G.touched = true;
-    drag = {y:e.clientY, start: sheet.classList.contains('collapsed') ? maxOff() : 0, off:null, moved:false, onHandle, id:e.pointerId};
-    sheet.setPointerCapture(e.pointerId); sheet.classList.add('dragging');
-    e.preventDefault();
-  });
-  sheet.addEventListener('pointermove', e => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const dy = e.clientY - drag.y; if (Math.abs(dy) > 5) drag.moved = true;
-    if (!drag.moved) return;
-    drag.off = Math.min(Math.max(drag.start + dy, 0), maxOff());
-    sheet.style.transform = `translateY(${drag.off}px)`;
-  });
-  const endDrag = e => {
-    if (!drag || (e && e.pointerId !== drag.id)) return;
-    sheet.classList.remove('dragging'); sheet.style.transform = '';
-    const wasCollapsed = sheet.classList.contains('collapsed');
-    let collapse = wasCollapsed;
-    if (drag.moved && drag.off !== null){
-      // flick-friendly: a short drag in either direction is enough
-      const moved = drag.off - drag.start;
-      collapse = Math.abs(moved) > 40 ? moved > 0 : wasCollapsed;
-      suppressClick = true;
-    } else if (drag.onHandle || wasCollapsed){
-      collapse = !wasCollapsed; suppressClick = true;    // a click on the handle (or the collapsed strip) toggles
-    }
-    sheet.classList.toggle('collapsed', collapse);
-    drag = null;
-  };
-  sheet.addEventListener('pointerup', endDrag); sheet.addEventListener('pointercancel', endDrag);
-  sheet.addEventListener('lostpointercapture', endDrag);
-  sheet.addEventListener('click', e => { if (suppressClick){ suppressClick = false; e.stopPropagation(); } });   // dragging never opens the page
-  /* gently cycles through the tiles until you hover one */
-  if (!reduce) G.timer = setInterval(()=>{ if (G && !G.touched) select((G.sel+1) % tiles.length); }, 3200);
-}
-function stopPreview(){ if (G){ clearInterval(G.timer); G = null; } }
+/* ---------- modules ---------- */
+cc.innerHTML = KEYS.map(k => { const s = S[k]; return `
+  <section class="mod m-${k}" data-key="${k}" style="--c:${coverColor(k)}">
+    <button class="mod-head" aria-expanded="false">
+      <span class="num"><em></em>${s.num}</span>
+      <span><span class="lbl">${s.label}</span><span class="sub">${s.sub}</span></span>
+      <span class="plus" aria-hidden="true">+</span>
+    </button>
+    <div class="mod-body">
+      <h3>${s.title}</h3>
+      <div class="items">${s.items.map((it,i)=>`<button class="item" data-i="${i}"><b>${it.t}</b><span>${it.d}</span></button>`).join('')}</div>
+      <div class="mod-foot"><button class="open-btn">Open ${s.label} ↗</button><small>${canHover ? 'Hover an item to change the photo · click to open' : 'Tap an item to see its photo · tap again to open'}</small></div>
+    </div>
+  </section>`; }).join('');
+const mods = [...cc.querySelectorAll('.mod')];
+const modOf = k => mods.find(m => m.dataset.key === k);
 
-/* ---------- parallax tilt on the home cutout ---------- */
-stage.addEventListener('mousemove', e => {
+/* smooth re-layout: every module glides from its old spot to its new one */
+function flip(mutate){
+  const first = new Map(mods.map(m => [m, m.getBoundingClientRect()]));
+  mutate();
   if (reduce) return;
-  const r = stage.getBoundingClientRect();
-  const x = (e.clientX - r.left)/r.width - .5, y = (e.clientY - r.top)/r.height - .5;
-  stageInner.style.transform = `rotateY(${x*6}deg) rotateX(${-y*6}deg)`;
-  home.querySelectorAll('.layer').forEach(l => { const d = +l.dataset.depth; l.style.transform = `translate(${-x*d}px, ${-y*d}px)`; });
-});
-stage.addEventListener('mouseleave', () => { stageInner.style.transform = ''; home.querySelectorAll('.layer').forEach(l => l.style.transform=''); });
-
-/* ---------- expand to fullscreen ---------- */
-function rectInset(){
-  const r = stage.getBoundingClientRect();
-  return `inset(${r.top}px ${innerWidth - r.right}px ${innerHeight - r.bottom}px ${r.left}px round 32px)`;
+  mods.forEach(m => {
+    const a = first.get(m), b = m.getBoundingClientRect();
+    const dx = a.left - b.left, dy = a.top - b.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    m.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}], {duration:520, easing:'cubic-bezier(.2,.8,.2,1)'});
+  });
 }
-function open(k){
+
+function select(k){
+  if (k === sel) k = null;                       // clicking the open module closes it
+  flip(() => {
+    mods.forEach(m => { const on = m.dataset.key === k; m.classList.toggle('open', on); m.querySelector('.mod-head').setAttribute('aria-expanded', on); });
+    cc.classList.toggle('has-open', !!k);
+  });
+  sel = k; body.classList.toggle('selected', !!k);
+  clearInterval(cycle);
+  if (!k){ setAccent('#FF5A1F'); setGlow(null); setBg(null); return; }
+  setGlow(k); touched = false; itemIdx = -1; pickItem(0);
+  /* gently walk through the items until you interact */
+  if (!reduce) cycle = setInterval(() => { if (!touched && sel === k) pickItem((itemIdx + 1) % S[k].items.length); }, 3800);
+  const m = modOf(k);
+  if (innerWidth <= 900) setTimeout(() => m.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+  else setTimeout(() => { const r = m.getBoundingClientRect(), c = cc.getBoundingClientRect(); if (r.bottom > c.bottom || r.top < c.top) m.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 540);
+}
+function pickItem(i){
+  const s = S[sel]; if (!s) return;
+  itemIdx = i;
+  modOf(sel).querySelectorAll('.item').forEach((b,j) => b.classList.toggle('on', j === i));
+  const it = s.items[i];
+  setAccent(it.img ? col(it.img) : s.c);
+  setBg(it.img || null);
+}
+
+cc.addEventListener('click', e => {
+  const m = e.target.closest('.mod'); if (!m) return;
+  const k = m.dataset.key;
+  if (e.target.closest('.mod-head')) return select(k);
+  if (e.target.closest('.open-btn')) return open(k, m);
+  const it = e.target.closest('.item');
+  if (it){
+    const i = +it.dataset.i; touched = true;
+    if (!canHover && i !== itemIdx) return pickItem(i);   // touch: first tap previews
+    pickItem(i); open(k, m);
+  }
+});
+/* mousemove (not mouseover): items only react when you actually move the mouse,
+   never because the layout slid an item under a resting cursor */
+/* ...and only once the pointer settles on an item for a moment, so sweeping across
+   items on the way somewhere else (e.g. to "View photo") doesn't change anything */
+let dwell = 0, dwellOn = -1;
+cc.addEventListener('mousemove', e => {
+  const it = e.target.closest('.item');
+  if (!it || !sel || it.closest('.mod').dataset.key !== sel){ clearTimeout(dwell); dwellOn = -1; return; }
+  const i = +it.dataset.i;
+  if (i === dwellOn) return;
+  clearTimeout(dwell); dwellOn = i;
+  dwell = setTimeout(() => { if (i !== itemIdx || !touched){ touched = true; pickItem(i); } }, 140);
+});
+cc.addEventListener('mouseleave', () => { clearTimeout(dwell); dwellOn = -1; });
+
+/* ---------- view photo (fade the glass away) ---------- */
+const peekBtn = $('#peekBtn'), peekLbl = $('#peekLbl');
+function enterPeek(){ body.classList.add('peek'); peekBtn.setAttribute('aria-pressed','true'); peekLbl.textContent = 'Back'; touched = true; }
+function exitPeek(){ body.classList.remove('peek'); peekBtn.setAttribute('aria-pressed','false'); peekLbl.textContent = 'View photo'; }
+peekBtn.addEventListener('click', e => { e.stopPropagation(); body.classList.contains('peek') ? exitPeek() : enterPeek(); });
+document.addEventListener('click', e => { if (body.classList.contains('peek') && !e.target.closest('#peekBtn')) exitPeek(); });
+
+/* ---------- expand a section to a full page (grows out of its module) ---------- */
+function insetOf(el){
+  const r = el.getBoundingClientRect();
+  return `inset(${r.top}px ${innerWidth - r.right}px ${innerHeight - r.bottom}px ${r.left}px round 26px)`;
+}
+function open(k, fromEl){
   if (isOpen) return;
-  if (current !== k){ current = null; show(k); }
-  isOpen = true; stopPreview();
+  isOpen = true; openFrom = fromEl || modOf(k);
   const s = S[k];
   pageColor = s.hero ? col(s.hero) : s.c;
   setAccent(pageColor);
@@ -539,34 +502,33 @@ function open(k){
   xInner.innerHTML = page(k);
   expand.scrollTop = 0;
   expand.classList.remove('anim','ready');
-  expand.style.clipPath = rectInset();
+  expand.style.clipPath = insetOf(openFrom);
   expand.classList.add('show');
   expand.getBoundingClientRect();
   expand.classList.add('anim');
   expand.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
-  setTimeout(()=>{ expand.classList.add('ready'); xClose.focus({preventScroll:true}); }, 380);
+  setTimeout(() => { expand.classList.add('ready'); xClose.focus({preventScroll:true}); }, 380);
 }
 function close(){
   if (!isOpen) return;
   expand.classList.remove('ready');
-  expand.style.clipPath = rectInset();
-  setTimeout(()=>{
+  expand.style.clipPath = insetOf(openFrom);
+  setTimeout(() => {
     expand.classList.remove('show','anim'); isOpen = false;
-    const k = current; current = null;
-    show(canHover ? k : null);
-    const t = tiles.find(t=>t.dataset.key===k); t && t.focus({preventScroll:true});
+    if (sel && itemIdx >= 0) pickItem(itemIdx); else setAccent('#FF5A1F');
+    openFrom && openFrom.querySelector('.mod-head').focus({preventScroll:true});
   }, 650);
 }
 xClose.addEventListener('click', close);
 
-/* hovering a photo inside a page recolours the page; clicking opens it big */
+/* inside a page: hovering a photo recolours the page; clicking opens it big (videos play inline) */
 expand.addEventListener('mouseover', e => { const f = e.target.closest('.ph'); if (f) setAccent(col(f.dataset.k)); });
 expand.addEventListener('mouseout', e => { const f = e.target.closest('.ph'); if (f && !f.contains(e.relatedTarget) && pageColor) setAccent(pageColor); });
 expand.addEventListener('click', e => {
   const f = e.target.closest('.ph'); if (!f) return;
   if (f.dataset.v){
     if (f.classList.contains('playing')) return;
-    f.classList.add('playing'); setAccent(col(f.dataset.k)); pageColor = col(f.dataset.k);
+    f.classList.add('playing'); pageColor = col(f.dataset.k); setAccent(pageColor);
     f.insertAdjacentHTML('beforeend', `<iframe src="https://drive.google.com/file/d/${f.dataset.v}/preview" allow="autoplay; fullscreen" allowfullscreen title="${cap(f.dataset.k)}"></iframe>`);
     return;
   }
@@ -575,7 +537,14 @@ expand.addEventListener('click', e => {
 function openLb(k){ setAccent(col(k)); lbImg.src = src(k); lbImg.alt = cap(k); lbCap.textContent = cap(k); lb.classList.add('open'); }
 function closeLb(){ lb.classList.remove('open'); if (pageColor) setAccent(pageColor); }
 lb.addEventListener('click', closeLb);
-addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (lb.classList.contains('open')) closeLb(); else close(); });
+
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (lb.classList.contains('open')) closeLb();
+  else if (isOpen) close();
+  else if (body.classList.contains('peek')) exitPeek();
+  else if (sel) select(sel);
+});
 
 /* ---------- page content ---------- */
 const ph = (k, cls='') => `<figure class="ph ${cls}" data-k="${k}" style="--pc:${col(k)}"><img loading="lazy" src="${src(k)}" alt="${cap(k)}"><figcaption>${cap(k)}</figcaption></figure>`;
@@ -681,8 +650,10 @@ function page(k){
   return '';
 }
 
+
+
 /* warm the cache with each section's first photo */
-addEventListener('load', () => KEYS.forEach(k => { const it = S[k].items.find(i=>i.img); if (it) new Image().src = src(it.img); }));
+addEventListener('load', () => KEYS.forEach(k => { const i = firstImg(k); if (i) new Image().src = src(i); }));
 </script>
 </body>
 </html>
