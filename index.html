@@ -77,10 +77,11 @@
          border:1px solid rgba(255,255,255,.28);box-shadow:0 24px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
          animation:sheetUp .7s var(--ease) backwards;transition:transform .5s var(--ease)}
   .sheet.dragging{transition:none}
-  .sheet.collapsed{transform:translateY(calc(100% - 46px))}
+  .sheet.collapsed{transform:translateY(calc(100% - 58px))}
+  .sheet{-webkit-user-select:none;user-select:none;touch-action:none}
   @keyframes sheetUp{from{transform:translateY(108%)}to{transform:none}}
   /* the grab zone: drag (or click) to slide the sheet down and see the whole photo */
-  .grab-zone{flex:none;height:30px;margin:-12px -16px 6px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:grab;touch-action:none;color:#fff;font-size:12px;font-weight:600}
+  .grab-zone{flex:none;height:46px;margin:-12px -16px 0;display:flex;align-items:center;justify-content:center;gap:10px;cursor:grab;touch-action:none;color:#fff;font-size:12px;font-weight:600}
   .grab-zone:active{cursor:grabbing}
   .grabber{width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.5);transition:width .3s var(--ease),background .3s}
   .grab-zone:hover .grabber{width:60px;background:rgba(255,255,255,.85)}
@@ -465,30 +466,48 @@ function startGlass(s){
   };
   tiles.forEach((t,i)=>t.addEventListener('mouseenter', ()=>{ G.touched = true; select(i); }));
   select(0);
-  /* drag the grab zone down to reveal the photo, up to bring the tiles back; a click toggles */
+  /* Drag the sheet down to reveal the photo, up to bring the tiles back.
+     You can grab it anywhere except on a tile/button (big hit area); clicking the handle toggles it. */
   const sheet = $('#sheet'), grab = $('#grab');
-  let drag = null;
-  const maxOff = () => sheet.offsetHeight - 46;
-  grab.addEventListener('pointerdown', e => {
+  const PEEK = 58;
+  let drag = null, suppressClick = false;
+  const maxOff = () => sheet.offsetHeight - PEEK;
+  sheet.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    suppressClick = false;
+    const onHandle = !!e.target.closest('#grab');
+    if (!onHandle && !sheet.classList.contains('collapsed') && e.target.closest('.g-tile, .pv-cta')) return;
     G.touched = true;
-    drag = {y:e.clientY, start: sheet.classList.contains('collapsed') ? maxOff() : 0, moved:false};
-    grab.setPointerCapture(e.pointerId); sheet.classList.add('dragging');
+    drag = {y:e.clientY, start: sheet.classList.contains('collapsed') ? maxOff() : 0, off:null, moved:false, onHandle, id:e.pointerId};
+    sheet.setPointerCapture(e.pointerId); sheet.classList.add('dragging');
+    e.preventDefault();
   });
-  grab.addEventListener('pointermove', e => {
-    if (!drag) return;
-    const dy = e.clientY - drag.y; if (Math.abs(dy) > 4) drag.moved = true;
-    const off = Math.min(Math.max(drag.start + dy, 0), maxOff());
-    sheet.style.transform = `translateY(${off}px)`; drag.off = off;
+  sheet.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dy = e.clientY - drag.y; if (Math.abs(dy) > 5) drag.moved = true;
+    if (!drag.moved) return;
+    drag.off = Math.min(Math.max(drag.start + dy, 0), maxOff());
+    sheet.style.transform = `translateY(${drag.off}px)`;
   });
-  const endDrag = () => {
-    if (!drag) return;
+  const endDrag = e => {
+    if (!drag || (e && e.pointerId !== drag.id)) return;
     sheet.classList.remove('dragging'); sheet.style.transform = '';
-    const collapse = drag.moved ? drag.off > maxOff()/2 : !sheet.classList.contains('collapsed');
+    const wasCollapsed = sheet.classList.contains('collapsed');
+    let collapse = wasCollapsed;
+    if (drag.moved && drag.off !== null){
+      // flick-friendly: a short drag in either direction is enough
+      const moved = drag.off - drag.start;
+      collapse = Math.abs(moved) > 40 ? moved > 0 : wasCollapsed;
+      suppressClick = true;
+    } else if (drag.onHandle || wasCollapsed){
+      collapse = !wasCollapsed; suppressClick = true;    // a click on the handle (or the collapsed strip) toggles
+    }
     sheet.classList.toggle('collapsed', collapse);
     drag = null;
   };
-  grab.addEventListener('pointerup', endDrag); grab.addEventListener('pointercancel', endDrag);
-  grab.addEventListener('click', e => e.stopPropagation());   // grabbing never opens the page
+  sheet.addEventListener('pointerup', endDrag); sheet.addEventListener('pointercancel', endDrag);
+  sheet.addEventListener('lostpointercapture', endDrag);
+  sheet.addEventListener('click', e => { if (suppressClick){ suppressClick = false; e.stopPropagation(); } });   // dragging never opens the page
   /* gently cycles through the tiles until you hover one */
   if (!reduce) G.timer = setInterval(()=>{ if (G && !G.touched) select((G.sel+1) % tiles.length); }, 3200);
 }
