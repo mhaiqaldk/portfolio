@@ -40,6 +40,11 @@
   .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
   .bg img{position:absolute;inset:-2%;width:104%;height:104%;max-width:none;object-fit:cover;opacity:0;transform:scale(1.06);transition:opacity .9s var(--ease),transform 9s ease-out}
   .bg img.on{opacity:1;transform:scale(1)}
+  /* home shuffle: slow iPhone-style drift, each photo from a different corner */
+  .bg img.kb{transition:opacity 1.4s var(--ease),transform 9s linear;transform:scale(1.14)}
+  .bg img.kb.on{transform:scale(1.02)}
+  .bg img.kb.o1{transform-origin:20% 30%}.bg img.kb.o2{transform-origin:80% 25%}
+  .bg img.kb.o3{transform-origin:30% 80%}.bg img.kb.o4{transform-origin:75% 70%}
   .bg img.shot{filter:blur(10px) brightness(.8);transition:opacity .9s var(--ease),transform 9s ease-out,filter .5s}
   body.peek .bg img.shot{filter:none;object-fit:contain}
   .bg-tint{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--accent);mix-blend-mode:multiply;opacity:0;transition:opacity .6s}
@@ -394,9 +399,30 @@ function setBg(key){
   bgCap.textContent = cap(key);
   const im = new Image(); im.alt = ''; im.src = src(key);
   if (P[key][0].startsWith('shots/')) im.classList.add('shot');
+  if (!sel) im.classList.add('kb', 'o' + (1 + Math.floor(Math.random()*4)));
   bg.appendChild(im);
   (im.decode ? im.decode() : Promise.resolve()).catch(()=>{}).then(() => { if (bgKey === key) requestAnimationFrame(() => im.classList.add('on')); });
 }
+
+/* ---------- home photo shuffle: when no section is open, the background cycles through photos ---------- */
+const SHUFFLE = ['nyc-night','beach','band','culture-night','kkn-team','lighthouse','chicago','stadium','parade-banner',
+                 'snowman','pisa','train','kkn-crew','nyc-day','msu-grad','iisma-cohort','parade-selfie','spartan'];
+let shufTimer = 0, shufStart = 0, shufOrder = [], shufPos = 0;
+function nextShuffle(){
+  if (sel || isOpen || body.classList.contains('peek') || document.hidden) return;   // pauses while you look at something
+  if (shufPos >= shufOrder.length){
+    shufOrder = SHUFFLE.slice().sort(() => Math.random() - .5);
+    if (shufOrder[0] === bgKey) shufOrder.push(shufOrder.shift());                 // no instant repeat
+    shufPos = 0;
+  }
+  const k = shufOrder[shufPos++];
+  setAccent(col(k)); setBg(k);
+}
+function startShuffle(delay = 0){
+  stopShuffle();
+  shufStart = setTimeout(() => { nextShuffle(); shufTimer = setInterval(nextShuffle, 7000); }, delay);
+}
+function stopShuffle(){ clearTimeout(shufStart); clearInterval(shufTimer); }
 
 /* ---------- modules ---------- */
 cc.innerHTML = KEYS.map(k => { const s = S[k]; return `
@@ -436,7 +462,8 @@ function select(k){
   });
   sel = k; body.classList.toggle('selected', !!k);
   clearInterval(cycle);
-  if (!k){ setAccent('#FF5A1F'); setGlow(null); setBg(null); return; }
+  if (!k){ setGlow(null); startShuffle(500); return; }
+  stopShuffle();
   setGlow(k); touched = false; itemIdx = -1; pickItem(0);
   /* gently walk through the items until you interact */
   if (!reduce) cycle = setInterval(() => { if (!touched && sel === k) pickItem((itemIdx + 1) % S[k].items.length); }, 3800);
@@ -515,7 +542,7 @@ function close(){
   expand.style.clipPath = insetOf(openFrom);
   setTimeout(() => {
     expand.classList.remove('show','anim'); isOpen = false;
-    if (sel && itemIdx >= 0) pickItem(itemIdx); else setAccent('#FF5A1F');
+    if (sel && itemIdx >= 0) pickItem(itemIdx); else if (bgKey) setAccent(col(bgKey)); else setAccent('#FF5A1F');
     openFrom && openFrom.querySelector('.mod-head').focus({preventScroll:true});
   }, 650);
 }
@@ -654,6 +681,7 @@ function page(k){
 
 /* warm the cache with each section's first photo */
 addEventListener('load', () => KEYS.forEach(k => { const i = firstImg(k); if (i) new Image().src = src(i); }));
+startShuffle(2500);   // a moment of the clean glow first, then the photos start
 </script>
 </body>
 </html>
