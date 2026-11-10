@@ -60,15 +60,22 @@
   .pv-head h2{font-size:clamp(30px,3.4vw,48px);line-height:1.05;margin-top:8px;max-width:15ch;color:#fff}
   .pv-cta{position:absolute;right:28px;bottom:24px;z-index:4;font-weight:600;font-size:14px;padding:10px 16px;border-radius:999px;background:var(--accent);color:var(--on)}
 
-  .wheel-wrap{position:absolute;left:8%;right:8%;top:50%;height:300px;margin-top:-120px;perspective:900px;z-index:3}
-  .wheel-band{position:absolute;left:0;right:0;top:50%;height:58px;margin-top:-29px;border-radius:16px;background:var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.3)}
-  .wheel{position:absolute;inset:0;transform-style:preserve-3d;transform:translateZ(-120px);touch-action:none;cursor:grab}
-  .wheel:active{cursor:grabbing}
-  .w-item{position:absolute;left:0;right:0;top:50%;height:58px;margin-top:-29px;display:flex;align-items:center;justify-content:center;gap:14px;color:#fff;
-          font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:clamp(20px,2.2vw,30px);backface-visibility:hidden;user-select:none;transition:color .3s}
-  .w-item.sel{font-weight:800;color:var(--on)}
-  .wheel-detail{position:absolute;left:36px;right:210px;bottom:26px;z-index:3;font-size:15px;line-height:1.5;color:#fff;min-height:46px;transition:opacity .25s}
-  .wheel-hint{position:absolute;right:30px;top:50%;translate:0 -50%;z-index:3;font-size:11px;color:#fff;opacity:.6;writing-mode:vertical-rl;letter-spacing:.12em;text-transform:uppercase}
+  /* GLASS sheet: frosted panel that sits half-open over the photo */
+  .sheet{position:absolute;left:16px;right:16px;bottom:16px;height:58%;z-index:3;border-radius:28px;padding:12px 16px 70px;display:flex;flex-direction:column;
+         background:rgba(255,255,255,.13);-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
+         border:1px solid rgba(255,255,255,.28);box-shadow:0 24px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
+         animation:sheetUp .7s var(--ease) both}
+  @keyframes sheetUp{from{transform:translateY(108%)}to{transform:none}}
+  .grabber{flex:none;width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.45);margin:0 auto 12px}
+  .g-tiles{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:minmax(64px,1fr);gap:10px;overflow:auto;scrollbar-width:none}
+  .g-tile{text-align:left;color:#fff;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+          display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;
+          transition:background .35s,border-color .35s,transform .35s var(--ease);animation:tileIn .5s var(--ease) both}
+  .g-tile b{font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(15px,1.4vw,18px);line-height:1.15}
+  .g-tile span{font-size:12.5px;line-height:1.35;opacity:.82;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .g-tile.sel{background:color-mix(in srgb,var(--accent) 62%,transparent);border-color:var(--accent);transform:translateY(-2px)}
+  @keyframes tileIn{from{opacity:0;transform:translateY(14px)}}
+  .sheet .pv-cta{right:16px;bottom:14px}
 
   /* ---------- PANEL ---------- */
   .panel{display:flex;flex-direction:column;gap:22px;padding:14px 6px 4px;overflow:auto;min-height:0}
@@ -179,8 +186,7 @@
     .stage{height:62vh;min-height:400px}
     .menu{min-height:0}
     .tile{min-height:112px}
-    .wheel-detail{right:30px;bottom:74px}
-    .wheel-hint{display:none}
+    .sheet{height:62%}
     .proj{grid-template-columns:1fr}
     .ph.land{grid-column:auto}
     .gallery{grid-template-columns:repeat(2,1fr)}
@@ -260,7 +266,7 @@ const P = {
 };
 const src = k => `assets/${P[k][0]}.webp`, col = k => P[k][1], cap = k => P[k][2];
 
-/* ---------- sections (wheel items can carry a photo; its colour drives the theme) ---------- */
+/* ---------- sections (preview items can carry a photo; its colour drives the theme) ---------- */
 const S = {
   about:{num:'01',label:'About',sub:'Who I am',title:'A curious builder from Jakarta.',c:'#FF5A1F',hero:'beach',
     items:[
@@ -353,7 +359,7 @@ tiles.forEach(t => {
   t.addEventListener('focus', () => show(k));
   t.addEventListener('click', () => open(k));
 });
-/* Leaving the menu doesn't reset straight away: you can move onto the stage to scroll the wheel.
+/* Leaving the menu doesn't reset straight away: you can move onto the stage to use the glass tiles.
    It only goes back to the photo once the pointer has left BOTH the menu and the stage for a moment. */
 let homeTimer;
 const scheduleHome = () => { clearTimeout(homeTimer); homeTimer = setTimeout(() => { if (canHover && !isOpen) show(null); }, 450); };
@@ -373,24 +379,22 @@ function show(k){
   setAccent(k ? coverColor(k) : '#FF5A1F');
   stage.classList.toggle('clickable', !!k);
   clearTimeout(swapTimer);
-  if (!k){ preview.classList.remove('active'); home.classList.add('active'); stopWheel(); return; }
+  if (!k){ preview.classList.remove('active'); home.classList.add('active'); stopPreview(); return; }
   home.classList.remove('active');
   preview.classList.remove('active');
   swapTimer = setTimeout(() => { render(k); preview.classList.add('active'); }, 140);
 }
 function render(k){
   const s = S[k];
-  stopWheel();
+  stopPreview();
   preview.innerHTML = `
     <div class="pv-bg" id="pvBg"></div><div class="pv-tint"></div><div class="pv-shade"></div>
     <div class="pv-head"><span class="kicker">${s.num} — ${s.label}</span><h2>${s.title}</h2></div>
-    <div class="wheel-wrap"><div class="wheel-band"></div>
-      <div class="wheel" id="wheel">${s.items.map((it,i)=>`<div class="w-item" data-i="${i}">${it.t}</div>`).join('')}</div>
-    </div>
-    <span class="wheel-hint">scroll or drag</span>
-    <p class="wheel-detail" id="wdetail"></p>
-    <span class="pv-cta">Click to open ↗</span>`;
-  startWheel(s);
+    <div class="sheet"><div class="grabber"></div>
+      <div class="g-tiles" id="gTiles">${s.items.map((it,i)=>`<button class="g-tile" data-i="${i}" tabindex="-1" style="animation-delay:${.18+i*.05}s"><b>${it.t}</b><span>${it.d}</span></button>`).join('')}</div>
+      <span class="pv-cta">Click to open ↗</span>
+    </div>`;
+  startGlass(s);
 }
 function setStagePhoto(key){
   const bg = $('#pvBg'); if (!bg) return;
@@ -402,65 +406,25 @@ function setStagePhoto(key){
   (im.decode ? im.decode() : Promise.resolve()).catch(()=>{}).then(() => requestAnimationFrame(() => im.classList.add('on')));
 }
 
-/* ---------- iOS-style picker wheel ---------- */
-const STEP = 26, R = 120;
-let W = null;
-function startWheel(s){
-  const el = $('#wheel'), items = [...el.children], detail = $('#wdetail');
-  W = {el, s, pos:0, target:0, last:-1, idleAt:performance.now(), raf:0, drag:null};
-  const n = items.length;
-  const loop = () => {
-    if (!W) return;
-    const now = performance.now();
-    if (!W.drag && !W.touched && !reduce && now - W.idleAt > 3200){   /* auto-spin only until you interact */ W.target = Math.round(W.target) + 1; W.idleAt = now; }
-    W.pos += (W.target - W.pos) * (reduce ? 1 : .22);
-    items.forEach((it,i) => {
-      let d = ((i - W.pos) % n + n) % n; if (d > n/2) d -= n;
-      const a = d * STEP;
-      if (Math.abs(a) >= 88){ it.style.opacity = 0; return; }
-      it.style.transform = `rotateX(${-a}deg) translateZ(${R}px)`;
-      it.style.opacity = Math.pow(Math.cos(a*Math.PI/180), 3).toFixed(3);
-    });
-    const sel = ((Math.round(W.pos) % n) + n) % n;
-    if (sel !== W.last){
-      W.last = sel;
-      const it = s.items[sel];
-      items.forEach((x,i)=>x.classList.toggle('sel', i===sel));
-      setAccent(it.img ? col(it.img) : s.c);
-      setStagePhoto(it.img);
-      detail.style.opacity = 0;
-      setTimeout(()=>{ if (W && W.last===sel){ detail.textContent = it.d; detail.style.opacity = 1; } }, 120);
-    }
-    W.raf = requestAnimationFrame(loop);
+/* ---------- glass tiles: hover a tile to change the photo and colour ---------- */
+let G = null;
+function startGlass(s){
+  const tiles = [...document.querySelectorAll('#gTiles .g-tile')];
+  G = {s, tiles, sel:-1, touched:false, timer:0};
+  const select = i => {
+    if (!G || i === G.sel) return;
+    G.sel = i;
+    tiles.forEach((t,j)=>t.classList.toggle('sel', j===i));
+    const it = s.items[i];
+    setAccent(it.img ? col(it.img) : s.c);
+    setStagePhoto(it.img);
   };
-  loop();
-  el.addEventListener('pointerdown', e => { W.touched = true; W.drag = {y:e.clientY, t:W.target}; el.setPointerCapture(e.pointerId); });
-  el.addEventListener('pointermove', e => { if (W && W.drag){ W.target = W.drag.t - (e.clientY - W.drag.y)/40; W.idleAt = performance.now(); } });
-  const end = e => { if (W && W.drag){ if (Math.abs(e.clientY - W.drag.y) > 4) W.justDragged = true; W.drag = null; W.target = Math.round(W.target); W.idleAt = performance.now(); } };
-  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
-  el.addEventListener('click', e => { if (W && W.justDragged){ W.justDragged = false; e.stopPropagation(); } }, true);
+  tiles.forEach((t,i)=>t.addEventListener('mouseenter', ()=>{ G.touched = true; select(i); }));
+  select(0);
+  /* gently cycles through the tiles until you hover one */
+  if (!reduce) G.timer = setInterval(()=>{ if (G && !G.touched) select((G.sel+1) % tiles.length); }, 3200);
 }
-function stopWheel(){ if (W){ cancelAnimationFrame(W.raf); W = null; } }
-/* Scroll = one item per gesture. Trackpads fire dozens of events per swipe (plus momentum),
-   so we add up the distance, move at most one step, then wait until the gesture has ended. */
-let wheelAcc = 0, wheelBusy = false, wheelEnd, lastDelta = 0, lastStep = 0;
-stage.addEventListener('wheel', e => {
-  if (!W || isOpen) return;
-  e.preventDefault();
-  const now = performance.now(), d = Math.abs(e.deltaY);
-  W.touched = true; W.idleAt = now;
-  clearTimeout(wheelEnd);
-  wheelEnd = setTimeout(() => { wheelBusy = false; wheelAcc = 0; lastDelta = 0; }, 90);   // gesture over
-  /* a new swipe can start while the last one is still easing out: spot it by the speed jumping back up */
-  if (wheelBusy && d > 12 && d > lastDelta * 1.6 && now - lastStep > 180){ wheelBusy = false; wheelAcc = 0; }
-  lastDelta = d;
-  if (wheelBusy) return;
-  wheelAcc += e.deltaY;
-  if (Math.abs(wheelAcc) >= 25){
-    W.target = Math.round(W.target) + Math.sign(wheelAcc);
-    wheelAcc = 0; wheelBusy = true; lastStep = now;
-  }
-}, {passive:false});
+function stopPreview(){ if (G){ clearInterval(G.timer); G = null; } }
 
 /* ---------- parallax tilt on the home cutout ---------- */
 stage.addEventListener('mousemove', e => {
@@ -480,7 +444,7 @@ function rectInset(){
 function open(k){
   if (isOpen) return;
   if (current !== k){ current = null; show(k); }
-  isOpen = true; stopWheel();
+  isOpen = true; stopPreview();
   const s = S[k];
   pageColor = s.hero ? col(s.hero) : s.c;
   setAccent(pageColor);
