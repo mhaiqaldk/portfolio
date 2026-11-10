@@ -377,9 +377,18 @@ $('#menu').innerHTML = KEYS.map(k => { const s=S[k]; return `
     <span class="arrow">↗</span>
   </button>`; }).join('');
 const tiles = [...document.querySelectorAll('.tile')];
+let intentTimer;
 tiles.forEach(t => {
   const k = t.dataset.key;
-  t.addEventListener('mouseenter', () => canHover && show(k));
+  /* hover intent: once a preview is showing, a box only takes over if the pointer actually
+     rests on it, so brushing past other boxes on the way to the stage doesn't switch sections */
+  t.addEventListener('mouseenter', () => {
+    if (!canHover) return;
+    clearTimeout(intentTimer);
+    if (!current || isOpen) show(k);
+    else intentTimer = setTimeout(() => show(k), 260);
+  });
+  t.addEventListener('mouseleave', () => clearTimeout(intentTimer));
   t.addEventListener('focus', () => show(k));
   t.addEventListener('click', () => open(k));
 });
@@ -390,7 +399,7 @@ const scheduleHome = () => { clearTimeout(homeTimer); homeTimer = setTimeout(() 
 const cancelHome = () => clearTimeout(homeTimer);
 $('#menu').addEventListener('mouseleave', scheduleHome);
 $('#menu').addEventListener('mouseenter', cancelHome);
-stage.addEventListener('mouseenter', cancelHome);
+stage.addEventListener('mouseenter', () => { cancelHome(); clearTimeout(intentTimer); });
 stage.addEventListener('mouseleave', () => { if (current) scheduleHome(); });
 stage.addEventListener('click', () => { if (current && !isOpen) open(current); });
 
