@@ -12,13 +12,15 @@
   /* --accent animates smoothly because it is a registered colour property */
   @property --accent { syntax:'<color>'; inherits:true; initial-value:#FF5A1F; }
   @property --on     { syntax:'<color>'; inherits:true; initial-value:#FFFFFF; }
+  @property --a2     { syntax:'<color>'; inherits:true; initial-value:#3D5BFF; }
+  @property --a3     { syntax:'<color>'; inherits:true; initial-value:#FF3D8B; }
 
   :root{
     --bg:#0F0E13; --surface:#1A1922; --surface2:#24222E; --text:#F6F2EA; --muted:#A39FB0; --line:rgba(255,255,255,.09);
     --brand:#FF5A1F; --cobalt:#3D5BFF; --pink:#FF3D8B; --sun:#FFC531;
     --accent:#FF5A1F; --on:#FFFFFF;
     --radius:32px; --ease:cubic-bezier(.2,.8,.2,1);
-    transition:--accent .6s var(--ease), --on .6s var(--ease);
+    transition:--accent .6s var(--ease), --on .6s var(--ease), --a2 .9s var(--ease), --a3 .9s var(--ease);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -28,7 +30,16 @@
   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   img{display:block;max-width:100%}
 
-  .app{display:grid;grid-template-columns:1.15fr 1fr;gap:20px;height:100vh;padding:20px}
+  .app{position:relative;z-index:1;display:grid;grid-template-columns:1.15fr 1fr;gap:20px;height:100vh;padding:20px}
+
+  /* FULL GLASS: soft colour glow behind the menu, taken from the current section's photos */
+  .aura{position:fixed;top:0;right:0;bottom:0;width:60%;z-index:0;overflow:hidden;pointer-events:none;
+        -webkit-mask-image:linear-gradient(to right,transparent,#000 30%);mask-image:linear-gradient(to right,transparent,#000 30%)}
+  .aura i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:drift 16s ease-in-out infinite alternate}
+  .aura .b1{width:60%;aspect-ratio:1;right:-10%;top:30%;background:var(--accent)}
+  .aura .b2{width:50%;aspect-ratio:1;left:5%;top:-8%;background:var(--a2);animation-delay:-5s}
+  .aura .b3{width:46%;aspect-ratio:1;left:20%;bottom:-12%;background:var(--a3);animation-delay:-10s}
+  @keyframes drift{to{transform:translate(-10%,8%) scale(1.15)}}
 
   /* ---------- STAGE ---------- */
   .stage{position:relative;border-radius:var(--radius);background:var(--brand);overflow:hidden;perspective:1200px}
@@ -99,9 +110,10 @@
   @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(185,246,202,0)}100%{box-shadow:0 0 0 0 rgba(185,246,202,0)}}
 
   .menu{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;flex:1;min-height:340px}
-  .tile{position:relative;text-align:left;padding:16px 18px 14px;border-radius:22px;background:var(--surface);border:1px solid var(--line);
+  .tile{position:relative;text-align:left;padding:16px 18px 14px;border-radius:22px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+        -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
         display:flex;flex-direction:column;justify-content:space-between;gap:12px;overflow:hidden;transition:transform .35s var(--ease),box-shadow .35s}
-  .tile::before{content:"";position:absolute;inset:0;background:var(--accent);transform:translateY(101%);transition:transform .45s var(--ease)}
+  .tile::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--accent) 82%,transparent);transform:translateY(101%);transition:transform .45s var(--ease)}
   .tile > *{position:relative}
   .tile .num{font-size:12px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
   .tile .num em{width:12px;height:12px;border-radius:50%;background:var(--c)}
@@ -193,6 +205,7 @@
   @media (max-width:860px){
     body{overflow:auto}
     .app{grid-template-columns:1fr;height:auto;padding:16px;gap:16px}
+    .aura{width:100%}
     .stage{height:62vh;min-height:400px}
     .menu{min-height:0}
     .tile{min-height:112px}
@@ -206,6 +219,7 @@
 </style>
 </head>
 <body>
+<div class="aura" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
 <main class="app">
   <section class="stage" id="stage" aria-live="polite">
     <div class="stage-inner" id="stageInner">
@@ -382,11 +396,22 @@ stage.addEventListener('click', () => { if (current && !isOpen) open(current); }
 
 /* ---------- stage preview ---------- */
 let swapTimer;
+/* the glow's other two colours come from the section's other photos */
+function setGlow(k){
+  let cs = ['#3D5BFF','#FF3D8B'];
+  if (k){
+    const s = S[k];
+    const own = [...new Set(s.items.filter(i=>i.img).map(i=>col(i.img)))].slice(1);
+    cs = [own[0] || s.c, own[1] || own[0] || s.c];
+  }
+  root.style.setProperty('--a2', cs[0]); root.style.setProperty('--a3', cs[1]);
+}
 function show(k){
   if (k === current) return;
   current = k;
   tiles.forEach(t => t.classList.toggle('on', t.dataset.key === k));
   setAccent(k ? coverColor(k) : '#FF5A1F');
+  setGlow(k);
   stage.classList.toggle('clickable', !!k);
   clearTimeout(swapTimer);
   if (!k){ preview.classList.remove('active'); home.classList.add('active'); stopPreview(); return; }
