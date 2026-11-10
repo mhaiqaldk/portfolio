@@ -64,9 +64,19 @@
   .sheet{position:absolute;left:16px;right:16px;bottom:16px;height:58%;z-index:3;border-radius:28px;padding:12px 16px 70px;display:flex;flex-direction:column;
          background:rgba(255,255,255,.13);-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
          border:1px solid rgba(255,255,255,.28);box-shadow:0 24px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
-         animation:sheetUp .7s var(--ease) both}
+         animation:sheetUp .7s var(--ease) backwards;transition:transform .5s var(--ease)}
+  .sheet.dragging{transition:none}
+  .sheet.collapsed{transform:translateY(calc(100% - 46px))}
   @keyframes sheetUp{from{transform:translateY(108%)}to{transform:none}}
-  .grabber{flex:none;width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.45);margin:0 auto 12px}
+  /* the grab zone: drag (or click) to slide the sheet down and see the whole photo */
+  .grab-zone{flex:none;height:30px;margin:-12px -16px 6px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:grab;touch-action:none;color:#fff;font-size:12px;font-weight:600}
+  .grab-zone:active{cursor:grabbing}
+  .grabber{width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.5);transition:width .3s var(--ease),background .3s}
+  .grab-zone:hover .grabber{width:60px;background:rgba(255,255,255,.85)}
+  .peek{display:none;opacity:.85}
+  .sheet.collapsed .peek{display:inline}
+  .sheet .g-tiles,.sheet .pv-cta{transition:opacity .3s}
+  .sheet.collapsed .g-tiles,.sheet.collapsed .pv-cta{opacity:0;pointer-events:none}
   .g-tiles{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:minmax(64px,1fr);gap:10px;overflow:auto;scrollbar-width:none}
   .g-tile{text-align:left;color:#fff;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
           display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;
@@ -270,11 +280,11 @@ const src = k => `assets/${P[k][0]}.webp`, col = k => P[k][1], cap = k => P[k][2
 const S = {
   about:{num:'01',label:'About',sub:'Who I am',title:'A curious builder from Jakarta.',c:'#FF5A1F',hero:'beach',
     items:[
+      {t:'Storyteller',d:'Writes, directs and edits: scripts, shows and videos.',img:'culture-night'},
       {t:'Front-end dev',d:'Responsive web apps with React, Next.js and Tailwind CSS.',img:'docusmart'},
       {t:'AI tinkerer',d:'Integrates LLM APIs like Gemini into tools people actually use.',img:'novacv'},
       {t:'IISMA scholar',d:'Fully funded exchange semester at Michigan State University, 2024.',img:'beach'},
       {t:'Team lead',d:'Led a KKN subunit and directed a 100+ audience theatre show.',img:'kkn-team'},
-      {t:'Storyteller',d:'Writes, directs and edits: scripts, shows and videos.',img:'culture-night'},
     ]},
   projects:{num:'02',label:'Projects',sub:'Things I built',title:'Five projects, from PDFs to MIDI.',c:'#3D5BFF',hero:'docusmart',
     items:[
@@ -286,13 +296,13 @@ const S = {
     ]},
   journey:{num:'03',label:'Journey',sub:'Experience & leadership',title:'Where I\'ve been, and what I led.',c:'#FF3D8B',hero:'kkn-team',
     items:[
-      {t:'KKN · 2026',d:'Subunit Leader, UGM Community Service Program in Magetan, East Java.',img:'kkn-team'},
+      {t:'KKN · 2026',d:'Subunit Leader, UGM Community Service Program in Magetan, East Java.',img:'kkn-crew'},
       {t:'Dashboard · 2025',d:'Backend Developer (remote) in a 2-person monorepo team.'},
       {t:'IISMA · 2024',d:'Director of Events & Co-Student Rep at Michigan State University.',img:'msu-grad'},
       {t:'DPM · 2023',d:'First Commission Staff, tracking CS program event funding.'},
       {t:'WITH YOUTH · 2020',d:'Head of Content Writer for mental-health advocacy content.'},
     ]},
-  skills:{num:'04',label:'Skills',sub:'My toolbox',title:'The tools I reach for.',c:'#FFC531',
+  skills:{num:'04',label:'Skills',sub:'My toolbox',title:'The tools I reach for.',c:'#8B5CF6',
     items:[
       {t:'TypeScript',d:'Plus JavaScript, Python, SQL, HTML/CSS.'},
       {t:'React · Next.js',d:'My main stack for front-end work.'},
@@ -303,14 +313,14 @@ const S = {
     ]},
   play:{num:'05',label:'Off the Clock',sub:'Band, theatre, videos & travels',wide:true,title:'What I do when I\'m not coding.',c:'#FF5A1F',hero:'culture-night',
     items:[
+      {t:'Travel',d:'New York, Chicago, Japan, Pisa, and counting.',img:'nyc-night'},
       {t:'Band',d:'Lead guitar and backing vocals in Rascal Teenagers.',img:'band'},
       {t:'Theatre',d:'Directed "Princess Rengganis and the Mythical Batik" at MSU.',img:'culture-night'},
       {t:'Video',d:'Shooting and editing my own videos.',img:'filming'},
       {t:'Homecoming',d:'Marching in the MSU homecoming parade with the Indonesian students.',img:'parade-selfie'},
-      {t:'Travel',d:'New York, Chicago, Japan, Pisa, and counting.',img:'nyc-night'},
       {t:'First snow',d:'A tropical kid meets his first Michigan winter.',img:'snowman'},
     ]},
-  cv:{num:'06',label:'CV',sub:'One page, PDF',title:'The one-page version.',c:'#3D5BFF',
+  cv:{num:'06',label:'CV',sub:'One page, PDF',title:'The one-page version.',c:'#20DFA7',
     items:[
       {t:'Summary',d:'Fresh CS graduate seeking an entry-level front-end role.'},
       {t:'Projects',d:'DocuSmart, NovaCV, BUMDes website, Adaptive MIDI, Unified Dashboard.'},
@@ -390,7 +400,7 @@ function render(k){
   preview.innerHTML = `
     <div class="pv-bg" id="pvBg"></div><div class="pv-tint"></div><div class="pv-shade"></div>
     <div class="pv-head"><span class="kicker">${s.num} — ${s.label}</span><h2>${s.title}</h2></div>
-    <div class="sheet"><div class="grabber"></div>
+    <div class="sheet" id="sheet"><div class="grab-zone" id="grab" title="Drag down to see the photo"><span class="grabber"></span><span class="peek">Pull up</span></div>
       <div class="g-tiles" id="gTiles">${s.items.map((it,i)=>`<button class="g-tile" data-i="${i}" tabindex="-1" style="animation-delay:${.18+i*.05}s"><b>${it.t}</b><span>${it.d}</span></button>`).join('')}</div>
       <span class="pv-cta">Click to open ↗</span>
     </div>`;
@@ -421,6 +431,30 @@ function startGlass(s){
   };
   tiles.forEach((t,i)=>t.addEventListener('mouseenter', ()=>{ G.touched = true; select(i); }));
   select(0);
+  /* drag the grab zone down to reveal the photo, up to bring the tiles back; a click toggles */
+  const sheet = $('#sheet'), grab = $('#grab');
+  let drag = null;
+  const maxOff = () => sheet.offsetHeight - 46;
+  grab.addEventListener('pointerdown', e => {
+    G.touched = true;
+    drag = {y:e.clientY, start: sheet.classList.contains('collapsed') ? maxOff() : 0, moved:false};
+    grab.setPointerCapture(e.pointerId); sheet.classList.add('dragging');
+  });
+  grab.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dy = e.clientY - drag.y; if (Math.abs(dy) > 4) drag.moved = true;
+    const off = Math.min(Math.max(drag.start + dy, 0), maxOff());
+    sheet.style.transform = `translateY(${off}px)`; drag.off = off;
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    sheet.classList.remove('dragging'); sheet.style.transform = '';
+    const collapse = drag.moved ? drag.off > maxOff()/2 : !sheet.classList.contains('collapsed');
+    sheet.classList.toggle('collapsed', collapse);
+    drag = null;
+  };
+  grab.addEventListener('pointerup', endDrag); grab.addEventListener('pointercancel', endDrag);
+  grab.addEventListener('click', e => e.stopPropagation());   // grabbing never opens the page
   /* gently cycles through the tiles until you hover one */
   if (!reduce) G.timer = setInterval(()=>{ if (G && !G.touched) select((G.sel+1) % tiles.length); }, 3200);
 }
