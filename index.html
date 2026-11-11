@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haiqal Dwikusuma</title>
-<meta name="description" content="Portfolio of Muhammad Haiqal Dwikusuma, Computer Science graduate (UGM) and front-end developer.">
+<meta name="description" content="Portfolio of Muhammad Haiqal Dwikusuma, Computer Science graduate (UGM) and web developer.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -194,8 +194,6 @@
   .ph.vid .play{position:absolute;left:50%;top:50%;translate:-50% -50%;width:64px;height:64px;border-radius:50%;background:var(--pc);color:#fff;display:grid;place-items:center;font-size:22px;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .3s var(--ease)}
   .ph.vid:hover .play{transform:scale(1.1)}
   .ph.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .ph.vid.playing{cursor:default;transform:none}
-  .ph.vid.playing::after,.ph.vid.playing .play{display:none}
   .cv-frame{width:100%;height:80vh;border:0;border-radius:20px;background:#fff;margin-top:24px}
   .contact-list{display:grid;gap:14px;margin-top:28px}
   .contact-list a{display:flex;justify-content:space-between;align-items:center;padding:24px 26px;border-radius:24px;background:var(--surface);border:1px solid var(--line);text-decoration:none;font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(20px,2.6vw,32px);font-weight:600;transition:transform .3s var(--ease),background .3s,color .3s}
@@ -205,6 +203,12 @@
   /* lightbox */
   .lb{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:40px;background:color-mix(in srgb,var(--accent) 30%,#09080C);opacity:0;pointer-events:none;transition:opacity .35s}
   .lb.open{opacity:1;pointer-events:auto;cursor:zoom-out}
+  /* video player: big 16:9 frame on a tinted backdrop (black bars blend into the frame) */
+  .vb.open{cursor:default}
+  .vframe{width:min(1100px,92vw,calc((100vh - 150px) * 16 / 9));aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.55);transform:scale(.96);transition:transform .45s var(--ease)}
+  .vb.open .vframe{transform:none}
+  .vframe iframe{width:100%;height:100%;border:0;display:block}
+  .vb-close{position:fixed;top:22px;right:22px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on);font-size:20px}
   .lb figure{display:grid;gap:14px;justify-items:center;max-height:100%}
   .lb img{max-height:calc(100vh - 140px);max-width:min(1100px,100%);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.5);transform:scale(.96);transition:transform .45s var(--ease)}
   .lb.open img{transform:none}
@@ -261,6 +265,7 @@
 
 <div class="expand" id="expand" role="dialog" aria-modal="true" aria-label="Section"><div id="xHero"></div><div class="x-inner" id="xInner"></div></div>
 <button class="x-close" id="xClose" aria-label="Close">✕</button>
+<div class="lb vb" id="vb" role="dialog" aria-label="Video"><figure><div class="vframe" id="vFrame"></div><figcaption id="vCap"></figcaption></figure><button class="vb-close" id="vbClose" aria-label="Close video">✕</button></div>
 <div class="lb" id="lb" role="dialog" aria-label="Photo"><figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure></div>
 
 <script>
@@ -346,7 +351,7 @@ const S = {
     ]},
   cv:{num:'06',label:'CV',sub:'One page, PDF',title:'The one-page version.',c:'#20DFA7',
     items:[
-      {t:'Summary',d:'Fresh CS graduate seeking an entry-level front-end role.'},
+      {t:'Summary',d:'Fresh CS graduate looking for an IT role.'},
       {t:'Projects',d:'DocuSmart, NovaCV, BUMDes website, Adaptive MIDI, Unified Dashboard.'},
       {t:'Leadership',d:'KKN, IISMA, DPM KM FMIPA, WITH YOUTH.ID.'},
       {t:'Education',d:'UGM, GPA 3.43 / 4.00, exchange at Michigan State.'},
@@ -435,7 +440,7 @@ cc.innerHTML = KEYS.map(k => { const s = S[k]; return `
     <div class="mod-body">
       <h3>${s.title}</h3>
       <div class="items">${s.items.map((it,i)=>`<button class="item" data-i="${i}"><b>${it.t}</b><span>${it.d}</span></button>`).join('')}</div>
-      <div class="mod-foot"><button class="open-btn">Open ${s.label} ↗</button><small>${canHover ? 'Hover an item to change the photo · click to open' : 'Tap an item to see its photo · tap again to open'}</small></div>
+      <div class="mod-foot"><button class="open-btn">Open ${s.label} ↗</button></div>
     </div>
   </section>`; }).join('');
 const mods = [...cc.querySelectorAll('.mod')];
@@ -550,24 +555,31 @@ xClose.addEventListener('click', close);
 
 /* inside a page: hovering a photo recolours the page; clicking opens it big (videos play inline) */
 expand.addEventListener('mouseover', e => { const f = e.target.closest('.ph'); if (f) setAccent(col(f.dataset.k)); });
-expand.addEventListener('mouseout', e => { const f = e.target.closest('.ph'); if (f && !f.contains(e.relatedTarget) && pageColor) setAccent(pageColor); });
+expand.addEventListener('mouseout', e => {
+  if (lb.classList.contains('open') || vb.classList.contains('open')) return;   // keep the opened photo/video's colour
+  const f = e.target.closest('.ph'); if (f && !f.contains(e.relatedTarget) && pageColor) setAccent(pageColor);
+});
 expand.addEventListener('click', e => {
   const f = e.target.closest('.ph'); if (!f) return;
-  if (f.dataset.v){
-    if (f.classList.contains('playing')) return;
-    f.classList.add('playing'); pageColor = col(f.dataset.k); setAccent(pageColor);
-    f.insertAdjacentHTML('beforeend', `<iframe src="https://drive.google.com/file/d/${f.dataset.v}/preview" allow="autoplay; fullscreen" allowfullscreen title="${cap(f.dataset.k)}"></iframe>`);
-    return;
-  }
+  if (f.dataset.v) return openVid(f.dataset.k, f.dataset.v);
   openLb(f.dataset.k);
 });
+const vb = $('#vb'), vFrame = $('#vFrame'), vCap = $('#vCap');
+function openVid(k, id){
+  setAccent(col(k)); vCap.textContent = cap(k);
+  vFrame.innerHTML = `<iframe src="https://drive.google.com/file/d/${id}/preview" allow="autoplay; fullscreen" allowfullscreen title="${cap(k)}"></iframe>`;
+  vb.classList.add('open'); $('#vbClose').focus({preventScroll:true});
+}
+function closeVid(){ vb.classList.remove('open'); setTimeout(() => { if (!vb.classList.contains('open')) vFrame.innerHTML = ''; }, 350); if (pageColor) setAccent(pageColor); }
+vb.addEventListener('click', e => { if (e.target === vb || e.target.closest('#vbClose')) closeVid(); });
 function openLb(k){ setAccent(col(k)); lbImg.src = src(k); lbImg.alt = cap(k); lbCap.textContent = cap(k); lb.classList.add('open'); }
 function closeLb(){ lb.classList.remove('open'); if (pageColor) setAccent(pageColor); }
 lb.addEventListener('click', closeLb);
 
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (lb.classList.contains('open')) closeLb();
+  if (vb.classList.contains('open')) closeVid();
+  else if (lb.classList.contains('open')) closeLb();
   else if (isOpen) close();
   else if (body.classList.contains('peek')) exitPeek();
   else if (sel) select(sel);
@@ -583,11 +595,11 @@ const link = (href, label, ghost) => `<a class="btn${ghost?' ghost':''}" href="$
 function page(k){
   const s = S[k], kick = `<span class="kicker">${s.num} — ${s.label}</span>`;
   if (k==='about') return `${kick}<h2>Hi, I'm <span>Haiqal.</span></h2>
-    <p class="lead">I'm a Computer Science graduate from Universitas Gadjah Mada with hands-on experience building responsive web apps in React and Next.js and integrating AI APIs. I spent a semester at Michigan State University as a government scholarship awardee, and I've led teams in community service and cultural events. Now I'm looking for an entry-level front-end role where I can keep shipping real products and learn from experienced teams.</p>
+    <p class="lead">I'm a Computer Science graduate from Universitas Gadjah Mada with hands-on experience building responsive web apps in React and Next.js and integrating AI APIs. I spent a semester at Michigan State University as a government scholarship awardee, and I've led teams in community service and cultural events. Now I'm looking for my first role in IT, somewhere I can keep building real products and learn from experienced teams.</p>
     <div class="grid">
       <div class="card"><div class="meta">Education</div><h3>UGM, B.Sc. CS</h3><p>International Undergraduate Program, 2022–2026 · GPA 3.43 / 4.00</p></div>
       <div class="card"><div class="meta">Exchange · Aug–Dec 2024</div><h3>IISMA @ MSU</h3><p>Fully funded government scholarship semester in East Lansing, Michigan.</p></div>
-      <div class="card"><div class="meta">Based in</div><h3>Jakarta, Indonesia</h3><p>Open to on-site, hybrid, or remote front-end roles.</p></div>
+      <div class="card"><div class="meta">Based in</div><h3>Jakarta, Indonesia</h3><p>Open to on-site, hybrid, or remote roles.</p></div>
     </div>
     <div class="gallery">${ph('msu-grad')}${ph('kkn-team')}${ph('culture-night')}${ph('nyc-night')}</div>`;
 
@@ -668,7 +680,7 @@ function page(k){
     <div class="btns"><a class="btn" href="Resume_Muhammad_Haiqal_Dwikusuma.pdf" download>Download PDF ↓</a>${link('Resume_Muhammad_Haiqal_Dwikusuma.pdf','Open in new tab ↗',true)}</div>
     <iframe class="cv-frame" src="Resume_Muhammad_Haiqal_Dwikusuma.pdf" title="CV PDF"></iframe>`;
 
-  if (k==='contact') return `${kick}<h2>Let's <span>talk.</span></h2><p class="lead">Hiring for a front-end role, or have a project in mind? I usually reply within a day.</p>
+  if (k==='contact') return `${kick}<h2>Let's <span>talk.</span></h2><p class="lead">Hiring, or have a project in mind? I usually reply within a day.</p>
     <div class="contact-list">
       <a href="mailto:mhaiqaldk@gmail.com"><span><small>Email</small>mhaiqaldk@gmail.com</span>↗</a>
       <a href="https://linkedin.com/in/muhammad-haiqal-dwikusuma-103789250" target="_blank" rel="noopener"><span><small>LinkedIn</small>Muhammad Haiqal Dwikusuma</span>↗</a>
