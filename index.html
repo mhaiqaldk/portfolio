@@ -5,6 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haiqal Dwikusuma</title>
 <meta name="description" content="Portfolio of Muhammad Haiqal Dwikusuma, Computer Science graduate (UGM) and web developer.">
+<meta name="theme-color" content="#0F0E13">
+<!-- link preview card (WhatsApp, LinkedIn, email, X…) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://haiqal-portfolio-nu.vercel.app/">
+<meta property="og:title" content="Haiqal Dwikusuma · Portfolio">
+<meta property="og:description" content="Computer Science graduate from Universitas Gadjah Mada. Projects, journey, CV and more. #OpenToWork">
+<meta property="og:image" content="https://haiqal-portfolio-nu.vercel.app/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Haiqal Dwikusuma, Computer Science graduate">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Haiqal Dwikusuma · Portfolio">
+<meta name="twitter:description" content="Computer Science graduate from Universitas Gadjah Mada. Projects, journey, CV and more.">
+<meta name="twitter:image" content="https://haiqal-portfolio-nu.vercel.app/assets/og.jpg">
+<link rel="canonical" href="https://haiqal-portfolio-nu.vercel.app/">
+<!-- tab icon -->
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<!-- Vercel Web Analytics (visit counts; no cookies) -->
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -205,6 +227,8 @@
   .lb.open{opacity:1;pointer-events:auto;cursor:zoom-out}
   /* video player: big 16:9 frame on a tinted backdrop (black bars blend into the frame) */
   .vb.open{cursor:default}
+  .x-copy{position:fixed;top:26px;right:84px;z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;background:rgba(15,14,19,.6)}
+  .expand.ready ~ .x-copy{opacity:1;pointer-events:auto}
   .vframe{width:min(1100px,92vw,calc((100vh - 150px) * 16 / 9));aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.55);transform:scale(.96);transition:transform .45s var(--ease)}
   .vb.open .vframe{transform:none}
   .vframe iframe{width:100%;height:100%;border:0;display:block}
@@ -265,6 +289,7 @@
 
 <div class="expand" id="expand" role="dialog" aria-modal="true" aria-label="Section"><div id="xHero"></div><div class="x-inner" id="xInner"></div></div>
 <button class="x-close" id="xClose" aria-label="Close">✕</button>
+<button class="x-copy glass-pill" id="xCopy">🔗 Copy link</button>
 <div class="lb vb" id="vb" role="dialog" aria-label="Video"><figure><div class="vframe" id="vFrame"></div><figcaption id="vCap"></figcaption></figure><button class="vb-close" id="vbClose" aria-label="Close video">✕</button></div>
 <div class="lb" id="lb" role="dialog" aria-label="Photo"><figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure></div>
 
@@ -303,7 +328,9 @@ const P = {
   'bumdes':['shots/bumdes','#20DF62','BUMDes Cakra Waringin Jati website'],
   'midi':['shots/midi','#E4B844','Adaptive MIDI Generator'],
 };
-const src = k => `assets/${P[k][0]}.webp`, col = k => P[k][1], cap = k => P[k][2];
+const src = (k, size) => `assets/${P[k][0]}${size === 'sm' ? '-sm' : ''}.webp`, col = k => P[k][1], cap = k => P[k][2];
+const phone = matchMedia('(max-width: 900px)').matches;
+const srcBg = k => src(k, phone ? 'sm' : '');     // big backgrounds: light version on phones
 
 /* ---------- sections (preview items can carry a photo; its colour drives the theme) ---------- */
 const S = {
@@ -402,7 +429,7 @@ function setBg(key){
   body.classList.toggle('has-photo', !!key);
   if (!key){ exitPeek(); return; }
   bgCap.textContent = cap(key);
-  const im = new Image(); im.alt = ''; im.src = src(key);
+  const im = new Image(); im.alt = ''; im.src = srcBg(key);
   if (P[key][0].startsWith('shots/')) im.classList.add('shot');
   if (!sel) im.classList.add('kb', 'o' + (1 + Math.floor(Math.random()*4)));
   bg.appendChild(im);
@@ -525,12 +552,14 @@ function insetOf(el){
   return `inset(${r.top}px ${innerWidth - r.right}px ${innerHeight - r.bottom}px ${r.left}px round 26px)`;
 }
 function open(k, fromEl){
+  if (location.hash !== '#' + k) history.replaceState(null, '', '#' + k);
+  try { window.va('event', { name: 'Opened section', data: { section: k } }); } catch (e) {}
   if (isOpen) return;
   isOpen = true; openFrom = fromEl || modOf(k);
   const s = S[k];
   pageColor = s.hero ? col(s.hero) : s.c;
   setAccent(pageColor);
-  xHero.innerHTML = s.hero ? `<div class="hero"><img src="${src(s.hero)}" alt=""><div class="pv-tint"></div></div>` : `<div class="hero plain"></div>`;
+  xHero.innerHTML = s.hero ? `<div class="hero"><img src="${srcBg(s.hero)}" alt=""><div class="pv-tint"></div></div>` : `<div class="hero plain"></div>`;
   xInner.innerHTML = page(k);
   expand.scrollTop = 0;
   expand.classList.remove('anim','ready');
@@ -547,6 +576,7 @@ function close(){
   expand.style.clipPath = insetOf(openFrom);
   setTimeout(() => {
     expand.classList.remove('show','anim'); isOpen = false;
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
     if (sel && itemIdx >= 0) pickItem(itemIdx); else if (bgKey) setAccent(col(bgKey)); else setAccent('#FF5A1F');
     openFrom && openFrom.querySelector('.mod-head').focus({preventScroll:true});
   }, 650);
@@ -586,9 +616,9 @@ addEventListener('keydown', e => {
 });
 
 /* ---------- page content ---------- */
-const ph = (k, cls='') => `<figure class="ph ${cls}" data-k="${k}" style="--pc:${col(k)}"><img loading="lazy" src="${src(k)}" alt="${cap(k)}"><figcaption>${cap(k)}</figcaption></figure>`;
+const ph = (k, cls='') => `<figure class="ph ${cls}" data-k="${k}" style="--pc:${col(k)}"><img loading="lazy" src="${src(k,'sm')}" alt="${cap(k)}"><figcaption>${cap(k)}</figcaption></figure>`;
 /* video card: poster first (light), real Drive player loads on click */
-const vid = (k, id, desc) => `<div class="vid-card"><figure class="ph vid" data-k="${k}" data-v="${id}" style="--pc:${col(k)}"><img loading="lazy" src="${src(k)}" alt="${cap(k)}"><span class="play">▶</span></figure><h4>${cap(k)}</h4><p>${desc}</p></div>`;
+const vid = (k, id, desc) => `<div class="vid-card"><figure class="ph vid" data-k="${k}" data-v="${id}" style="--pc:${col(k)}"><img loading="lazy" src="${src(k,'sm')}" alt="${cap(k)}"><span class="play">▶</span></figure><h4>${cap(k)}</h4><p>${desc}</p></div>`;
 const tags = a => `<div class="tags">${a.map(x=>`<span class="tag">${x}</span>`).join('')}</div>`;
 const link = (href, label, ghost) => `<a class="btn${ghost?' ghost':''}" href="${href}" target="_blank" rel="noopener">${label}</a>`;
 
@@ -692,8 +722,27 @@ function page(k){
 
 
 /* warm the cache with each section's first photo */
-addEventListener('load', () => KEYS.forEach(k => { const i = firstImg(k); if (i) new Image().src = src(i); }));
+addEventListener('load', () => KEYS.forEach(k => { const i = firstImg(k); if (i) new Image().src = srcBg(i); }));
 startShuffle(2500);   // a moment of the clean glow first, then the photos start
+
+/* deep links: …/#projects opens straight to Projects */
+function openFromHash(){
+  const k = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+  if (!S[k]){ if (isOpen && !location.hash) close(); return; }
+  if (isOpen) return;
+  if (sel !== k) select(k);
+  setTimeout(() => open(k, modOf(k)), sel === k ? 560 : 0);
+}
+addEventListener('hashchange', openFromHash);
+if (location.hash) openFromHash();
+
+/* copy a link to the open section */
+const xCopy = $('#xCopy');
+xCopy.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(location.href); xCopy.textContent = 'Link copied ✓'; }
+  catch (e) { xCopy.textContent = location.href; }
+  setTimeout(() => xCopy.textContent = '🔗 Copy link', 1800);
+});
 </script>
 </body>
 </html>
