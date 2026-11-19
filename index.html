@@ -357,6 +357,7 @@ const S = {
     ]},
   journey:{num:'03',label:'Journey',sub:'Experience & leadership',title:'Where I\'ve been, and what I led.',c:'#FF3D8B',hero:'kkn-team',
     items:[
+      {t:'Neuram.ai · 2026',d:'AI Programmer, full-time at an AI solutions company in South Jakarta.'},
       {t:'KKN · 2026',d:'Subunit Leader, UGM Community Service Program in Magetan, East Java.',img:'kkn-crew'},
       {t:'Dashboard · 2025',d:'Backend Developer (remote) in a 2-person monorepo team.'},
       {t:'IISMA · 2024',d:'Director of Events & Co-Student Rep at Michigan State University.',img:'msu-grad'},
@@ -661,7 +662,8 @@ function page(k){
 
   if (k==='journey'){
     const J = [
-      ['Dec 2025 – Jan 2026','Subunit Leader · KKN UGM','Poncol, Magetan, East Java','Led a subunit in UGM\'s rural development program: coordinating tasks, adapting to field conditions, and delivering digital-infrastructure initiatives, including the village enterprise\'s website.',['kkn-team','kkn-meeting','kkn-crew'],'https://website-bumdes-theta.vercel.app'],
+      ['Dec 2026 – Present','AI Programmer · Neuram.ai','Cilandak, South Jakarta','Full-time, permanent role at Neuram.ai, an AI solutions company.',[],'https://neuram.ai','Visit Neuram.ai ↗'],
+      ['Dec 2025 – Jan 2026','Subunit Leader · KKN UGM','Poncol, Magetan, East Java','Led a subunit in UGM\'s rural development program: coordinating tasks, adapting to field conditions, and delivering digital-infrastructure initiatives, including the village enterprise\'s website.',['kkn-team','kkn-meeting','kkn-crew'],'https://website-bumdes-theta.vercel.app','See the BUMDes website ↗'],
       ['Sep – Oct 2025','Backend Developer · Unified Dashboard','Jakarta (remote)','Node.js + Express backend for a collaborative student dashboard, in a 2-person monorepo team.',[]],
       ['Aug – Dec 2024','Director of Events & Co-Student Rep · IISMA','Michigan State University, USA','Directed the interactive cultural drama "Princess Rengganis and the Mythical Batik" for 100+ people, from script and casting to wardrobe and audio, and represented the Indonesian cohort.',['msu-grad','iisma-cohort','culture-night']],
       ['Aug – Dec 2023','First Commission Staff · DPM KM FMIPA UGM','Yogyakarta','Tracked and reported fund usage for each Computer Science program event in Excel.',[]],
@@ -670,7 +672,7 @@ function page(k){
     return `${kick}<h2>Where I've <span>been.</span></h2><p class="lead">Experience, leadership and the places that shaped how I work with people.</p>
       <div class="timeline">${J.map(j=>`<div class="card"><div class="meta">${j[0]} · ${j[2]}</div><h3>${j[1]}</h3><p>${j[3]}</p>
         ${j[4].length?`<div class="gallery">${j[4].map(x=>ph(x)).join('')}</div>`:''}
-        ${j[5]?`<div class="btns">${link(j[5],'See the BUMDes website ↗')}</div>`:''}</div>`).join('')}</div>`;
+        ${j[5]?`<div class="btns">${link(j[5],j[6])}</div>`:''}</div>`).join('')}</div>`;
   }
 
   if (k==='skills') return `${kick}<h2>My <span>toolbox.</span></h2>
