@@ -641,8 +641,8 @@ function page(k){
 
   if (k==='projects'){
     const L = [
-      {n:'DocuSmart',y:'2024 · Full Stack Developer',st:['Next.js','React','TypeScript','Tailwind','Gemini API'],img:'docusmart',url:'https://docusmart.vercel.app',
-       b:['Mobile-friendly web app with PDF tools (merge, convert) and AI-powered document summaries.','Integrated the Gemini API to analyse and extract key information from uploaded PDFs.','Co-authored an IEEE-format paper on how the system integrates the language model.']},
+      {n:'DocuSmart',y:'2024 · Full Stack Developer',st:['Next.js','React','TypeScript','Tailwind','OpenRouter','Tavily','Docker'],img:'docusmart',url:'https://docusmart.vercel.app',code:'https://github.com/mhaiqaldk/docusmart',
+       b:['Mobile-friendly web app with PDF tools (merge, convert) and AI-powered document summaries.','Upload a CV as a PDF and get its name, location and work experience back as structured JSON, using an LLM through OpenRouter.','Searches recent news for any area you pick (tech, AI, finance and more) with the Tavily API.','Co-authored an IEEE-format paper on how the system integrates the language model.']},
       {n:'NovaCV',y:'In progress · Software Engineer',st:['Next.js','TypeScript'],img:'novacv',url:'https://nova-cv-three.vercel.app',
        b:['Stores a user\'s entire professional history in one master profile.','Dynamic templating system generates tailored, ATS-friendly CVs on demand.']},
       {n:'BUMDes Cakra Waringin Jati',y:'2026 · KKN UGM',st:['Web','Responsive','Vercel'],img:'bumdes',url:'https://website-bumdes-theta.vercel.app',
@@ -657,7 +657,7 @@ function page(k){
       <div style="display:grid;gap:18px;margin-top:32px">${L.map(p=>`
         <div class="card proj">${p.img?ph(p.img):'<div class="soon">Screenshot coming soon</div>'}
           <div><div class="meta">${p.y}</div><h3>${p.n}</h3><ul>${p.b.map(x=>`<li>${x}</li>`).join('')}</ul>${tags(p.st)}
-          ${p.url?`<div class="btns">${link(p.url,'Open live app ↗')}</div>`:''}</div></div>`).join('')}</div>`;
+          ${p.url||p.code?`<div class="btns">${p.url?link(p.url,'Open live app ↗'):''}${p.code?link(p.code,'View code ↗',true):''}</div>`:''}</div></div>`).join('')}</div>`;
   }
 
   if (k==='journey'){
