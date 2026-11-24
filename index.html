@@ -332,6 +332,7 @@ const P = {
   'novacv':['shots/novacv','#E44453','NovaCV'],
   'bumdes':['shots/bumdes','#20DF62','BUMDes Cakra Waringin Jati website'],
   'midi':['shots/midi','#E4B844','Adaptive MIDI Generator'],
+  'raglab':['shots/raglab','#FF5A1F','RAG Lab, watching an AI hallucinate'],
 };
 const src = (k, size) => `assets/${P[k][0]}${size === 'sm' ? '-sm' : ''}.webp`, col = k => P[k][1], cap = k => P[k][2];
 const phone = matchMedia('(max-width: 900px)').matches;
@@ -347,11 +348,12 @@ const S = {
       {t:'IISMA scholar',d:'Fully funded exchange semester at Michigan State University, 2024.',img:'beach'},
       {t:'Team lead',d:'Led a KKN subunit and directed a 100+ audience theatre show.',img:'kkn-team'},
     ]},
-  projects:{num:'02',label:'Projects',sub:'Things I built',title:'Five projects, from PDFs to MIDI.',c:'#3D5BFF',hero:'docusmart',
+  projects:{num:'02',label:'Projects',sub:'Things I built',title:'Six projects, from PDFs to RAG.',c:'#3D5BFF',hero:'docusmart',
     items:[
       {t:'DocuSmart',d:'PDF tools + AI document summaries with the Gemini API. Co-authored an IEEE-format paper on it.',img:'docusmart'},
       {t:'NovaCV',d:'AI resume builder: one master profile → tailored, ATS-friendly CVs on demand.',img:'novacv'},
       {t:'BUMDes Website',d:'Official site for a village-owned enterprise in Poncol, Magetan, built during KKN.',img:'bumdes'},
+      {t:'RAG Lab',d:'Research demo: watch an AI cite its sources, or make things up, as it reads more documents.',img:'raglab'},
       {t:'Adaptive MIDI',d:'My thesis: a rule-based generator of therapeutic MIDI music, live on Streamlit.',img:'midi'},
       {t:'Unified Dashboard',d:'Node.js + Express backend for a collaborative student dashboard.'},
     ]},
@@ -647,6 +649,8 @@ function page(k){
        b:['Stores a user\'s entire professional history in one master profile.','Dynamic templating system generates tailored, ATS-friendly CVs on demand.']},
       {n:'BUMDes Cakra Waringin Jati',y:'2026 · KKN UGM',st:['Web','Responsive','Vercel'],img:'bumdes',url:'https://website-bumdes-theta.vercel.app',
        b:['Official website for the village-owned enterprise of Desa Poncol, Magetan, built as one of our KKN digital-infrastructure programs.','Covers the profile, organisation structure, business units, legal documents, contact and a feedback form for residents.']},
+      {n:'RAG Lab',y:'2026 · Research (with Aldi)',st:['Python','FAISS','Qwen2.5','JavaScript','Vercel'],img:'raglab',url:'https://rag-saturasi-halusinasi-kssc.vercel.app',code:'https://github.com/mhaiqaldk/rag-saturasi-halusinasi-kssc',
+       b:['Interactive demo of our research on how many retrieved documents (Top-K) an Indonesian RAG system should read.','Explore real answers to all 764 IDK-MRC questions at K = 1, 3, 5 and 10, with checks that flag when a citation is wrong or an answer is made up.','In the paper, citation accuracy peaked at 76% with 5 documents and fell to 36% with 10.','I built the generation and evaluation side and the demo; Aldi built the retrieval pipeline.']},
       {n:'Adaptive MIDI Generator',y:'2024 · Undergraduate thesis',st:['Python','Streamlit','pretty_midi'],img:'midi',url:'https://adaptive-midi-generator.streamlit.app',
        b:['Generates therapeutic MIDI music across three presets: relaxation, motor synchronisation and cognitive stimulation.','Controls for tempo, rhythmic complexity and chords, with an interactive piano-roll view.']},
       {n:'Unified Dashboard',y:'Sep–Oct 2025 · Backend Developer',st:['Node.js','Express','React','Vite'],
